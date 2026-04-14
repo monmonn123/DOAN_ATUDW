@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+  <title th:text="${pageTitle}">Gửi thông báo</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h4 mb-0 text-dark">
+        <i class="bi bi-megaphone text-danger"></i> Gửi thông báo
+      </h1>
+      <p class="text-muted mb-0">Gửi thông báo đến toàn hệ thống hoặc người dùng cụ thể.</p>
+    </div>
+    <a th:href="@{/manager/notifications}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+  </div>
+
+  <!-- Alert Messages -->
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <form th:action="@{/manager/notifications/send}" method="post">
+        
+        <!-- Message Content -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">
+            <i class="bi bi-envelope-fill"></i> Nội dung thông báo <span class="text-danger">*</span>
+          </label>
+          <textarea class="form-control form-control-lg" 
+                    name="message" 
+                    rows="5" 
+                    placeholder="Nhập nội dung thông báo..."
+                    required
+                    maxlength="500"></textarea>
+          <small class="form-text text-muted">Tối đa 500 ký tự</small>
+        </div>
+
+        <!-- Notification Type -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">
+            <i class="bi bi-tag-fill"></i> Loại thông báo
+          </label>
+          <select class="form-select" name="type">
+            <option value="SYSTEM" selected>🔔 System (Hệ thống)</option>
+            <option value="QUESTION">❓ Question (Câu hỏi)</option>
+            <option value="ANSWER">✅ Answer (Câu trả lời)</option>
+            <option value="COMMENT">💬 Comment (Bình luận)</option>
+            <option value="MESSAGE">📧 Message (Tin nhắn)</option>
+            <option value="VOTE">👍 Vote (Bình chọn)</option>
+            <option value="EVENT">📅 Event (Sự kiện)</option>
+          </select>
+        </div>
+
+        <!-- Link (Optional) -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">
+            <i class="bi bi-link-45deg"></i> Đường dẫn (tùy chọn)
+          </label>
+          <input type="text" 
+                 class="form-control" 
+                 name="link" 
+                 placeholder="VD: /questions/123, /profile/username">
+          <small class="form-text text-muted">
+            Đường dẫn khi người dùng click vào thông báo
+          </small>
+        </div>
+
+        <!-- Target User -->
+        <div class="mb-4">
+          <label class="form-label fw-bold">
+            <i class="bi bi-people-fill"></i> Người nhận <span class="text-danger">*</span>
+          </label>
+          <select class="form-select form-select-lg" name="target" id="targetSelect">
+            <optgroup label="Gửi hàng loạt">
+              <option value="all" selected>📢 Tất cả người dùng</option>
+              <option value="role:USER">👤 USER</option>
+              <option value="role:MANAGER">👨‍💼 MANAGER</option>
+              <option value="role:ADMIN">👑 ADMIN</option>
+            </optgroup>
+          </select>
+          <small class="form-text text-muted">
+            Chọn gửi hàng loạt theo role hoặc chọn user cụ thể
+          </small>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="card bg-light mb-4">
+          <div class="card-header">
+            <h6 class="mb-0"><i class="bi bi-eye"></i> Preview</h6>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-info mb-0" role="alert">
+              <div class="d-flex align-items-start">
+                <i class="bi bi-bell-fill me-2 mt-1"></i>
+                <div>
+                  <strong id="previewType">SYSTEM</strong>
+                  <p class="mb-1" id="previewMessage">Nội dung thông báo sẽ hiển thị ở đây...</p>
+                  <small class="text-muted">
+                    Gửi đến: <strong id="previewTarget">Tất cả người dùng</strong>
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between">
+          <a th:href="@{/manager/notifications}" class="btn btn-secondary px-4">
+            <i class="bi bi-x-circle"></i> Hủy
+          </a>
+          <button type="submit" class="btn btn-primary px-4 btn-lg">
+            <i class="bi bi-send-fill"></i> Gửi thông báo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 Initializing Preview...');
+    
+    // Live Preview
+    const messageTextarea = document.querySelector('textarea[name="message"]');
+    const typeSelect = document.querySelector('select[name="type"]');
+    const targetSelect = document.getElementById('targetSelect');
+    const previewMessage = document.getElementById('previewMessage');
+    const previewType = document.getElementById('previewType');
+    const previewTarget = document.getElementById('previewTarget');
+    
+    console.log('✅ Elements found:', {
+        messageTextarea: !!messageTextarea,
+        typeSelect: !!typeSelect,
+        targetSelect: !!targetSelect,
+        previewMessage: !!previewMessage,
+        previewType: !!previewType,
+        previewTarget: !!previewTarget
+    });
+
+    function updatePreview() {
+        console.log('📝 Updating preview...');
+        
+        if (!messageTextarea || !typeSelect || !targetSelect || 
+            !previewMessage || !previewType || !previewTarget) {
+            console.error('❌ Missing elements!');
+            return;
+        }
+        
+        // Update message
+        const message = messageTextarea.value.trim();
+        previewMessage.textContent = message || 'Nội dung thông báo sẽ hiển thị ở đây...';
+        console.log('Message:', message);
+        
+        // Update type
+        const type = typeSelect.options[typeSelect.selectedIndex].text;
+        previewType.textContent = type;
+        console.log('Type:', type);
+        
+        // Update target
+        const targetValue = targetSelect.value;
+        if (targetValue === 'all') {
+            previewTarget.textContent = 'Tất cả người dùng';
+        } else if (targetValue.startsWith('role:')) {
+            const role = targetValue.substring(5);
+            const roleIcons = {
+                'USER': '👤',
+                'MANAGER': '👨‍💼',
+                'ADMIN': '👑'
+            };
+            previewTarget.textContent = (roleIcons[role] || '') + ' Tất cả ' + role;
+        } else {
+            const selectedText = targetSelect.options[targetSelect.selectedIndex].text;
+            previewTarget.textContent = selectedText;
+        }
+        console.log('Target:', targetValue);
+    }
+
+    // Add event listeners
+    if (messageTextarea) {
+        messageTextarea.addEventListener('input', updatePreview);
+        console.log('✅ Message listener added');
+    }
+    
+    if (typeSelect) {
+        typeSelect.addEventListener('change', updatePreview);
+        console.log('✅ Type listener added');
+    }
+    
+    if (targetSelect) {
+        targetSelect.addEventListener('change', updatePreview);
+        console.log('✅ Target listener added');
+    }
+
+    // Character counter
+    if (messageTextarea) {
+        messageTextarea.addEventListener('input', function() {
+            const length = this.value.length;
+            const maxLength = this.getAttribute('maxlength');
+            
+            // Show counter if close to limit
+            if (length > maxLength * 0.8) {
+                const existingCounter = this.parentElement.querySelector('.char-counter');
+                if (!existingCounter) {
+                    const counter = document.createElement('small');
+                    counter.className = 'char-counter text-muted float-end';
+                    counter.textContent = `${length}/${maxLength}`;
+                    this.parentElement.appendChild(counter);
+                } else {
+                    existingCounter.textContent = `${length}/${maxLength}`;
+                }
+            }
+        });
+    }
+
+    // Initialize preview
+    updatePreview();
+    console.log('✅ Preview initialized!');
+});
+</script>
+</th:block>
+
+<style>
+  [layout\:fragment="content"] { 
+    animation: fadeIn 0.3s ease-in-out; 
+  }
+  @keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(5px); } 
+    to { opacity: 1; transform: translateY(0); } 
+  }
+  
+  .form-select option {
+    padding: 8px;
+  }
+</style>
+
+</body>
+</html>

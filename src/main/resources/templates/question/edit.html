@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Edit Question</title>
+    <style>
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px;
+        }
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-preview-item {
+            position: relative;
+            display: inline-block;
+        }
+        .remove-image {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .existing-image-item {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        .existing-image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container py-4">
+        <h1 class="mb-4">
+            <i class="bi bi-pencil-square"></i> Edit Question
+        </h1>
+        
+        <!-- Alert Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-body">
+                <form th:action="@{/questions/{id}/edit(id=${question.id})}" th:object="${question}" 
+                      method="post" enctype="multipart/form-data">
+                    
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">
+                            <i class="bi bi-card-heading"></i> Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" th:field="*{title}" id="title" 
+                               required minlength="15" maxlength="200"
+                               placeholder="What's your programming question? Be specific.">
+                        <small class="form-text text-muted">
+                            Be specific and imagine you're asking a question to another person
+                        </small>
+                    </div>
+                    
+                    <!-- Body -->
+                    <div class="mb-3">
+                        <label for="body" class="form-label">
+                            <i class="bi bi-file-text"></i> Body <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" th:field="*{body}" id="body" rows="15" required
+                                  placeholder="Include all the information someone would need to answer your question"></textarea>
+                        <small class="form-text text-muted">
+                            Include all the information someone would need to answer your question
+                        </small>
+                    </div>
+
+                    <!-- Existing Images -->
+                    <div class="mb-3" th:if="${question.images != null && !question.images.isEmpty()}">
+                        <label class="form-label">
+                            <i class="bi bi-images"></i> Current Images
+                        </label>
+                        <div class="image-preview-container" id="existingImagesContainer">
+                            <div class="existing-image-item" th:each="image : ${question.images}" th:id="'image-' + ${image.id}">
+                                <img th:src="@{'/uploads/images/' + ${image.path}}" 
+                                     class="existing-image" 
+                                     th:alt="${image.path}">
+                                <button type="button" 
+                                        class="remove-image-btn btn" 
+                                        th:attr="data-image-id=${image.id},data-question-id=${question.id}"
+                                        title="Xóa ảnh này">×</button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Click <strong>×</strong> to remove an image
+                        </small>
+                    </div>
+
+                    <!-- Add New Images -->
+                    <div class="mb-3">
+                        <label for="files" class="form-label">
+                            <i class="bi bi-image"></i> Add More Images
+                        </label>
+                        <input type="file" class="form-control" id="files" name="files" 
+                               multiple accept="image/*" onchange="previewImages(event)">
+                        <small class="form-text text-muted">
+                            You can add multiple images (max 5MB each). Supported formats: JPG, PNG, GIF
+                        </small>
+                        <div id="imagePreviewContainer" class="image-preview-container"></div>
+                    </div>
+                    
+                    <!-- Tags -->
+                    <div class="mb-3">
+                        <label for="tagString" class="form-label">
+                            <i class="bi bi-tags"></i> Tags (Optional)
+                        </label>
+                        <input type="text" class="form-control" name="tagString" id="tagString"
+                               th:value="${#strings.setJoin(question.tags.![name], ', ')}"
+                               placeholder="e.g., java, spring-boot, javascript"
+                               autocomplete="off">
+                        <small class="form-text text-muted">
+                            Add up to 5 tags separated by commas. Start typing to see suggestions or create new tags.
+                        </small>
+                        
+                        <!-- Autocomplete Dropdown -->
+                        <div id="tagAutocomplete" class="border rounded shadow-sm bg-white mt-1" style="display: none; position: relative; z-index: 1000; max-height: 300px; overflow-y: auto;">
+                            <!-- Tags will be populated here -->
+                        </div>
+                        
+                        <!-- Popular Tags Suggestions -->
+                        <div class="mt-2">
+                            <small class="text-muted d-block mb-2">Popular tags:</small>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('java')">java</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('javascript')">javascript</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('python')">python</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('spring-boot')">spring-boot</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('react')">react</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('sql')">sql</button>
+                                <button type="button" class="tag-badge btn btn-sm btn-outline-secondary" onclick="addTag('database')">database</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Save Changes
+                        </button>
+                        <a th:href="@{/questions/{id}(id=${question.id})}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <a th:href="@{/profile/my-questions}" class="btn btn-outline-info ms-auto">
+                            <i class="bi bi-list"></i> My Questions
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// ==================== EVENT DELEGATION FOR DELETE BUTTONS ====================
+console.log('🔄 Script loaded!');
+
+// Use event delegation to avoid timing issues with inline onclick
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOMContentLoaded fired!');
+    console.log('Current URL:', window.location.href);
+    
+    const container = document.getElementById('existingImagesContainer');
+    console.log('Container search result:', container);
+    
+    if (container) {
+        console.log('✅ Found existing images container');
+        console.log('Container HTML:', container.outerHTML.substring(0, 200));
+        
+        // Find all delete buttons
+        const deleteButtons = container.querySelectorAll('.remove-image-btn');
+        console.log('Found', deleteButtons.length, 'delete buttons');
+        deleteButtons.forEach((btn, index) => {
+            console.log(`Button ${index}:`, {
+                imageId: btn.getAttribute('data-image-id'),
+                questionId: btn.getAttribute('data-question-id'),
+                class: btn.className
+            });
+        });
+        
+        container.addEventListener('click', function(event) {
+            console.log('🖱️ Container clicked!');
+            console.log('Clicked element:', event.target);
+            console.log('Element classes:', event.target.className);
+            console.log('Has remove-image-btn class:', event.target.classList.contains('remove-image-btn'));
+            
+            // Check if clicked element is a delete button
+            if (event.target.classList.contains('remove-image-btn')) {
+                console.log('✅ Delete button confirmed!');
+                
+                const button = event.target;
+                const imageId = button.getAttribute('data-image-id');
+                const questionId = button.getAttribute('data-question-id');
+                
+                console.log('Image ID:', imageId);
+                console.log('Question ID:', questionId);
+                
+                if (!imageId || !questionId) {
+                    console.error('❌ Missing image ID or question ID!');
+                    alert('❌ Lỗi: Không tìm thấy ID của ảnh hoặc câu hỏi!');
+                    return;
+                }
+                
+                deleteImage(imageId, questionId);
+            }
+        });
+        
+        console.log('✅ Event listener attached to container');
+    } else {
+        console.log('⚠️ No existing images container found (maybe no images)');
+        console.log('Available IDs on page:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+    }
+});
+
+// Preview new images
+function previewImages(event) {
+    const container = document.getElementById('imagePreviewContainer');
+    container.innerHTML = '';
+    const files = event.target.files;
+    
+    if (files) {
+        Array.from(files).forEach((file, index) => {
+            if (file.size > 5 * 1024 * 1024) {
+                alert(`File ${file.name} is too large. Maximum size is 5MB`);
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'image-preview-item';
+                
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'image-preview';
+                
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-image';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = function() {
+                    div.remove();
+                    // Clear the file input if all previews are removed
+                    if (container.children.length === 0) {
+                        document.getElementById('files').value = '';
+                    }
+                };
+                
+                div.appendChild(img);
+                div.appendChild(removeBtn);
+                container.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// Delete existing image
+async function deleteImage(imageId, questionId) {
+    console.log('\n==================== DELETE IMAGE ====================');
+    console.log('Image ID:', imageId);
+    console.log('Question ID:', questionId);
+    
+    const confirmMsg = '⚠️ Bạn có chắc chắn muốn xóa ảnh này không?\n\nHành động này không thể hoàn tác!';
+    if (!confirm(confirmMsg)) {
+        console.log('❌ User cancelled deletion');
+        return;
+    }
+    
+    console.log('✅ User confirmed deletion');
+    
+    const url = `/questions/${questionId}/images/${imageId}/delete`;
+    console.log('🌐 Request URL:', url);
+    console.log('🌐 Full URL:', window.location.origin + url);
+    
+    // Show loading state
+    const imageElement = document.getElementById('image-' + imageId);
+    if (imageElement) {
+        imageElement.style.opacity = '0.5';
+        imageElement.style.pointerEvents = 'none';
+        console.log('✅ Image element found, showing loading state');
+    } else {
+        console.error('❌ Image element not found:', 'image-' + imageId);
+    }
+    
+    try {
+        console.log('🔄 Sending POST request...');
+        console.log('Request config:', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {}
+        });
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+        
+        console.log('📡 Response received:');
+        console.log('  - Status:', response.status);
+        console.log('  - Status Text:', response.statusText);
+        console.log('  - OK:', response.ok);
+        console.log('  - Headers:', [...response.headers.entries()]);
+        
+        const responseText = await response.text();
+        console.log('📄 Response body:', responseText);
+        
+        if (response.ok) {
+            console.log('✅ SUCCESS! Image deleted');
+            
+            // Remove element from DOM with animation
+            if (imageElement) {
+                imageElement.style.transition = 'all 0.3s ease-out';
+                imageElement.style.transform = 'scale(0)';
+                imageElement.style.opacity = '0';
+                
+                setTimeout(() => {
+                    imageElement.remove();
+                    console.log('✅ Element removed from DOM');
+                    showToast('✅ Ảnh đã được xóa thành công!', 'success');
+                }, 300);
+            } else {
+                showToast('✅ Ảnh đã được xóa thành công!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            }
+        } else {
+            console.error('❌ ERROR! Server returned error');
+            console.error('Status:', response.status);
+            console.error('Response:', responseText);
+            
+            if (imageElement) {
+                imageElement.style.opacity = '1';
+                imageElement.style.pointerEvents = 'auto';
+            }
+            
+            alert(`❌ Lỗi xóa ảnh!\n\nStatus: ${response.status}\nMessage: ${responseText}`);
+            showToast(`❌ Lỗi ${response.status}: ${responseText}`, 'error');
+        }
+    } catch (error) {
+        console.error('❌ EXCEPTION!');
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        
+        if (imageElement) {
+            imageElement.style.opacity = '1';
+            imageElement.style.pointerEvents = 'auto';
+        }
+        
+        alert(`❌ Lỗi kết nối!\n\n${error.message}`);
+        showToast(`❌ Lỗi kết nối: ${error.message}`, 'error');
+    }
+    
+    console.log('==================== END DELETE IMAGE ====================\n');
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    // Create toast container if not exists
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Determine icon and color based on type
+    let icon = '📌';
+    let bgClass = 'bg-info';
+    if (type === 'success') {
+        icon = '✅';
+        bgClass = 'bg-success';
+    } else if (type === 'error') {
+        icon = '❌';
+        bgClass = 'bg-danger';
+    }
+    
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${icon} ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+    toast.show();
+    
+    // Remove element after hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+// ==================== TAG AUTOCOMPLETE ====================
+let allTags = [];
+let allTagsData = [];
+
+// Fetch all tags from API when page loads
+console.log('🔄 Starting to fetch tags for edit page...');
+fetch('/api/tags/all')
+    .then(response => {
+        console.log('✅ API response received:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('📦 Tags data:', data);
+        allTagsData = data;
+        allTags = data.map(tag => tag.name || tag);
+        console.log('✅ Loaded tags:', allTags.length, 'tags');
+    })
+    .catch(error => {
+        console.error('❌ Error loading tags:', error);
+        // Fallback tags
+        allTags = ['java', 'javascript', 'python', 'spring-boot', 'react', 'sql', 'database', 'html', 'css', 'nodejs'];
+        console.log('⚠️ Using fallback tags:', allTags.length);
+    });
+
+const tagsInput = document.getElementById('tagString');
+const tagAutocomplete = document.getElementById('tagAutocomplete');
+
+// Show autocomplete on focus
+tagsInput.addEventListener('focus', function() {
+    console.log('🎯 Input focused');
+    showTagSuggestions('');
+});
+
+// Show autocomplete on click
+tagsInput.addEventListener('click', function() {
+    console.log('🖱️ Input clicked');
+    showTagSuggestions('');
+});
+
+// Update autocomplete on input
+tagsInput.addEventListener('input', function() {
+    const currentInput = this.value;
+    const lastCommaIndex = currentInput.lastIndexOf(',');
+    const currentTag = currentInput.substring(lastCommaIndex + 1).trim();
+    
+    console.log('⌨️ Input changed, current tag:', currentTag);
+    showTagSuggestions(currentTag);
+});
+
+// Hide autocomplete when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target !== tagsInput && !tagAutocomplete.contains(e.target)) {
+        tagAutocomplete.style.display = 'none';
+    }
+});
+
+// Show tag suggestions
+function showTagSuggestions(filter) {
+    console.log('🔍 Showing suggestions for filter:', filter);
+    
+    const currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    console.log('🏷️ Current tags:', currentTags);
+    
+    // Filter tags: exclude already added tags, and filter by search term
+    const filteredTags = allTags
+        .filter(tag => !currentTags.includes(tag))
+        .filter(tag => filter === '' || tag.toLowerCase().includes(filter.toLowerCase()))
+        .slice(0, 20);
+    
+    console.log('✨ Filtered tags:', filteredTags.length);
+    
+    if (filteredTags.length === 0 && allTags.length === 0) {
+        tagAutocomplete.innerHTML = '<div class="p-3 text-muted text-center"><i class="bi bi-hourglass-split"></i> Loading tags...</div>';
+        tagAutocomplete.style.display = 'block';
+        return;
+    }
+    
+    if (filteredTags.length === 0) {
+        tagAutocomplete.style.display = 'none';
+        return;
+    }
+    
+    // Build dropdown HTML
+    let html = '<div class="list-group list-group-flush">';
+    filteredTags.forEach(tag => {
+        const tagData = allTagsData.find(t => t.name === tag);
+        const count = tagData ? tagData.questionCount || 0 : 0;
+        html += `
+            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2" 
+                    onclick="selectTagFromAutocomplete('${tag}')" style="cursor: pointer;">
+                <span><i class="bi bi-tag-fill text-primary me-2"></i><strong>${tag}</strong></span>
+                <span class="badge bg-secondary">${count}</span>
+            </button>
+        `;
+    });
+    html += '</div>';
+    
+    tagAutocomplete.innerHTML = html;
+    tagAutocomplete.style.display = 'block';
+    console.log('✅ Dropdown shown with', filteredTags.length, 'tags');
+}
+
+// Select tag from autocomplete
+function selectTagFromAutocomplete(tag) {
+    console.log('✅ Selected tag:', tag);
+    const currentInput = tagsInput.value.trim();
+    const lastCommaIndex = currentInput.lastIndexOf(',');
+    
+    let newValue;
+    if (lastCommaIndex === -1) {
+        // No comma found, replace entire input
+        newValue = tag;
+    } else {
+        // Replace only the last tag being typed
+        newValue = currentInput.substring(0, lastCommaIndex + 1) + ' ' + tag;
+    }
+    
+    // Check if we already have 5 tags
+    const tagsArray = newValue.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tagsArray.length < 5) {
+        tagsInput.value = newValue + ', ';
+    } else {
+        tagsInput.value = newValue;
+        alert('⚠️ Maximum 5 tags allowed!');
+    }
+    
+    tagsInput.focus();
+    tagAutocomplete.style.display = 'none';
+}
+
+// Add tag from popular tags buttons
+function addTag(tag) {
+    console.log('➕ Adding tag from button:', tag);
+    const currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    
+    if (!currentTags.includes(tag) && currentTags.length < 5) {
+        currentTags.push(tag);
+        tagsInput.value = currentTags.join(', ') + ', ';
+        tagsInput.focus();
+        console.log('✅ Tag added:', tag);
+    } else if (currentTags.length >= 5) {
+        alert('⚠️ Maximum 5 tags allowed!');
+    } else {
+        console.log('⚠️ Tag already exists:', tag);
+    }
+}
+</script>
+</th:block>
+</body>
+</html>

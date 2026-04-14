@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Chi Tiết Báo Cáo</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-flag-fill text-danger"></i> Chi Tiết Báo Cáo #<span th:text="${report.id}">1</span></h3>
+        <a th:href="@{/manager/reports}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Thông tin báo cáo -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Thông Tin Báo Cáo</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="200">Loại Nội Dung:</th>
+                            <td>
+                                <span class="badge bg-info" th:text="${report.entityType}">QUESTION</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>ID Nội Dung:</th>
+                            <td>
+                                <a th:if="${report.entityType == 'QUESTION'}" 
+                                   th:href="@{/questions/{id}(id=${report.entityId})}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i> Xem Câu Hỏi #<span th:text="${report.entityId}">1</span>
+                                </a>
+                                <a th:if="${report.entityType == 'ANSWER'}" 
+                                   th:href="@{/questions/1}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-box-arrow-up-right"></i> Xem Câu Trả Lời #<span th:text="${report.entityId}">1</span>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Lý Do:</th>
+                            <td>
+                                <span class="badge bg-warning text-dark fs-6" th:text="${report.reason}">SPAM</span>
+                                <div class="mt-2 text-muted small" th:switch="${report.reason}">
+                                    <span th:case="'SPAM'">🚫 Spam / Quảng cáo không mong muốn</span>
+                                    <span th:case="'OFFENSIVE'">😡 Ngôn từ xúc phạm hoặc thù địch</span>
+                                    <span th:case="'INAPPROPRIATE'">⚠️ Nội dung không phù hợp</span>
+                                    <span th:case="'DUPLICATE'">📋 Nội dung trùng lặp</span>
+                                    <span th:case="'MISINFORMATION'">❌ Thông tin sai lệch</span>
+                                    <span th:case="'OTHER'">💬 Lý do khác</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Mô Tả Chi Tiết:</th>
+                            <td>
+                                <div class="alert alert-light" th:if="${report.description != null and !report.description.isEmpty()}">
+                                    <p class="mb-0" th:text="${report.description}">Mô tả chi tiết...</p>
+                                </div>
+                                <span class="text-muted" th:if="${report.description == null or report.description.isEmpty()}">
+                                    <i>Không có mô tả</i>
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Trạng Thái:</th>
+                            <td>
+                                <span class="badge fs-6" 
+                                      th:classappend="${report.status == 'PENDING' ? 'bg-warning text-dark' : (report.status == 'RESOLVED' ? 'bg-success' : 'bg-secondary')}"
+                                      th:text="${report.status}">PENDING</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Ngày Tạo:</th>
+                            <td th:text="${report.createdAt != null ? #temporals.format(report.createdAt, 'dd/MM/yyyy HH:mm:ss') : 'N/A'}">01/01/2025 10:00:00</td>
+                        </tr>
+                        <tr th:if="${report.resolvedAt != null}">
+                            <th>Ngày Xử Lý:</th>
+                            <td th:text="${#temporals.format(report.resolvedAt, 'dd/MM/yyyy HH:mm:ss')}">01/01/2025 12:00:00</td>
+                        </tr>
+                        <tr th:if="${report.resolution != null and !report.resolution.isEmpty()}">
+                            <th>Kết Quả Xử Lý:</th>
+                            <td>
+                                <div class="alert alert-success mb-0">
+                                    <i class="bi bi-check-circle"></i>
+                                    <span th:text="${report.resolution}">Đã xử lý</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin người báo cáo -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-person-circle"></i> Người Báo Cáo</h6>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle fs-1 text-primary"></i>
+                    </div>
+                    <h5 th:text="${report.reporter != null ? report.reporter.username : 'N/A'}">username</h5>
+                    <p class="text-muted mb-3" th:if="${report.reporter != null}">
+                        <small>
+                            <i class="bi bi-envelope"></i> <span th:text="${report.reporter.email}">email@example.com</span>
+                        </small>
+                    </p>
+                    <a th:if="${report.reporter != null}" 
+                       th:href="@{/users/{id}(id=${report.reporter.id})}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Xem Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hành động -->
+            <div class="card" th:if="${report.status == 'PENDING'}">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="bi bi-gear"></i> Hành Động</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/manager/reports/{id}/resolve(id=${report.id})}" method="post" class="mb-2">
+                        <input type="hidden" name="status" value="RESOLVED">
+                        <input type="hidden" name="note" value="Đã xử lý bởi Manager">
+                        <button type="submit" class="btn btn-success w-100" 
+                                th:onclick="'return confirm(\'Xác nhận giải quyết báo cáo này?\n\n' + 
+                                           (${report.entityType == 'QUESTION'} ? 'Câu hỏi sẽ bị KHÓA và chuyển sang CHỜ DUYỆT.' : 'Câu trả lời sẽ bị XÓA VĨNH VIỄN.') + 
+                                           '\')'">
+                            <i class="bi bi-check-circle"></i> Giải Quyết
+                        </button>
+                    </form>
+                    
+                    <div class="alert mb-0" th:classappend="${report.entityType == 'QUESTION' ? 'alert-info' : 'alert-warning'}">
+                        <small>
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Khi giải quyết:</strong><br>
+                            <span th:if="${report.entityType == 'QUESTION'}">
+                                📌 Câu hỏi sẽ bị <strong>khóa</strong> và chuyển sang <strong>chờ duyệt</strong>.
+                            </span>
+                            <span th:if="${report.entityType == 'ANSWER'}">
+                                ⚠️ Câu trả lời sẽ bị <strong>xóa vĩnh viễn</strong>.
+                            </span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" th:if="${report.status != 'PENDING'}">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-check-circle"></i> Đã Xử Lý</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-calendar-check"></i>
+                        Báo cáo này đã được xử lý.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

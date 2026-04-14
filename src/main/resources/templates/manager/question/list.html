@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+
+<head>
+    <title th:text="${pageTitle}">Quản lý câu hỏi</title>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <!-- Header section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h4 mb-0 text-dark">
+                <i class="bi bi-question-circle text-primary"></i> Quản lý câu hỏi
+            </h1>
+            <p class="text-muted mb-0">
+                Hiển thị <strong th:text="${totalItems}">0</strong> câu hỏi
+            </p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Tổng câu hỏi</h6>
+                            <h3 class="mb-0" th:text="${totalQuestions}">0</h3>
+                        </div>
+                        <i class="bi bi-question-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Chờ duyệt</h6>
+                            <h3 class="mb-0" th:text="${pendingQuestions}">0</h3>
+                        </div>
+                        <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Đã duyệt</h6>
+                            <h3 class="mb-0" th:text="${approvedQuestions}">0</h3>
+                        </div>
+                        <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" th:action="@{/manager/questions}" class="row g-3">
+                <!-- Search -->
+                <div class="col-md-5">
+                    <label class="form-label"><i class="bi bi-search"></i> Tìm kiếm</label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="search" 
+                           th:value="${search}"
+                           placeholder="Tìm theo tiêu đề hoặc nội dung...">
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="col-md-3">
+                    <label class="form-label"><i class="bi bi-funnel"></i> Trạng thái</label>
+                    <select class="form-select" name="status">
+                        <option value="">Tất cả</option>
+                        <option value="approved" th:selected="${status == 'approved'}">Đã duyệt</option>
+                        <option value="pending" th:selected="${status == 'pending'}">Chờ duyệt</option>
+                    </select>
+                </div>
+                
+                <!-- Sort -->
+                <div class="col-md-2">
+                    <label class="form-label"><i class="bi bi-sort-down"></i> Sắp xếp</label>
+                    <select class="form-select" name="sortBy">
+                        <option value="createdAt" th:selected="${sortBy == 'createdAt'}">Ngày tạo</option>
+                        <option value="views" th:selected="${sortBy == 'views'}">Lượt xem</option>
+                        <option value="votes" th:selected="${sortBy == 'votes'}">Bình chọn</option>
+                        <option value="title" th:selected="${sortBy == 'title'}">Tiêu đề</option>
+                    </select>
+                </div>
+                
+                <!-- Sort Direction -->
+                <div class="col-md-2">
+                    <label class="form-label">Thứ tự</label>
+                    <select class="form-select" name="sortDir">
+                        <option value="desc" th:selected="${sortDir == 'desc'}">Giảm dần</option>
+                        <option value="asc" th:selected="${sortDir == 'asc'}">Tăng dần</option>
+                    </select>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Tìm kiếm
+                    </button>
+                    <a th:href="@{/manager/questions}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Xóa bộ lọc
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table card -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th style="width: 5%">ID</th>
+                            <th style="width: 30%" class="text-start">Tiêu đề</th>
+                            <th style="width: 12%">Tác giả</th>
+                            <th style="width: 8%">Lượt xem</th>
+                            <th style="width: 8%">Vote</th>
+                            <th style="width: 12%">Ngày tạo</th>
+                        <th style="width: 10%">Trạng thái</th>
+                            <th style="width: 15%">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="q : ${questions}" class="text-center">
+                        <td th:text="${q.id}"></td>
+                        <td class="text-start">
+                                <div class="d-flex align-items-center">
+                                    <span th:if="${q.getIsPinned()}" class="badge bg-warning text-dark me-2">
+                                        <i class="bi bi-pin-fill"></i>
+                                    </span>
+                                    <span th:if="${q.getIsLocked()}" class="badge bg-danger me-2">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </span>
+                                    <a th:href="@{'/questions/' + ${q.id}}"
+                               th:text="${q.title}"
+                                       target="_blank"
+                               class="fw-semibold text-decoration-none text-dark"></a>
+                                </div>
+                            </td>
+                            <td>
+                                <a th:href="@{'/profile/' + ${q.author.username}}"
+                                   th:text="${q.author != null ? q.author.username : 'Ẩn danh'}"
+                                   class="text-decoration-none"></a>
+                            </td>
+                            <td><i class="bi bi-eye text-muted"></i> <span th:text="${q.views}">0</span></td>
+                            <td>
+                                <span th:class="${q.votes >= 0 ? 'text-success' : 'text-danger'}">
+                                    <i th:class="${q.votes >= 0 ? 'bi bi-arrow-up-circle' : 'bi bi-arrow-down-circle'}"></i>
+                                    <span th:text="${q.votes}">0</span>
+                                </span>
+                        </td>
+                        <td th:text="${#temporals.format(q.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                                <td>
+                                <span th:if="${q.isApproved}" class="badge bg-success">Đã duyệt</span>
+                                <span th:unless="${q.isApproved}" class="badge bg-warning text-dark">Chờ duyệt</span>
+                            </td>
+                        <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- View -->
+                                    <a th:href="@{'/questions/' + ${q.id}}"
+                                       class="btn btn-outline-primary"
+                                       title="Xem"
+                                       target="_blank">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    <!-- Edit (only if NOT Admin's question) -->
+                                    <a th:if="${q.author.role != 'ADMIN'}"
+                                       th:href="@{'/manager/questions/' + ${q.id} + '/edit'}"
+                                       class="btn btn-outline-info"
+                                       title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    
+                                    <!-- Approve/Reject -->
+                                    <form th:if="${!q.isApproved}" 
+                                          th:action="@{'/manager/questions/' + ${q.id} + '/approve'}" 
+                                          method="post"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Duyệt câu hỏi này?');">
+                                        <button type="submit" class="btn btn-outline-success" title="Duyệt">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <form th:if="${q.isApproved}" 
+                                          th:action="@{'/manager/questions/' + ${q.id} + '/reject'}" 
+                                          method="post"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Từ chối câu hỏi này?');">
+                                        <button type="submit" class="btn btn-outline-warning" title="Từ chối">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Lock -->
+                                    <form th:action="@{'/manager/questions/' + ${q.id} + '/lock'}" 
+                                          method="post"
+                                          style="display:inline;">
+                                        <button type="submit" 
+                                                th:class="${q.getIsLocked() ? 'btn btn-outline-danger' : 'btn btn-outline-secondary'}"
+                                                th:title="${q.getIsLocked() ? 'Mở khóa' : 'Khóa'}">
+                                            <i th:class="${q.getIsLocked() ? 'bi bi-unlock' : 'bi bi-lock'}"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Pin -->
+                                    <form th:action="@{'/manager/questions/' + ${q.id} + '/pin'}" 
+                                          method="post"
+                                          style="display:inline;">
+                                        <button type="submit" 
+                                                th:class="${q.getIsPinned() ? 'btn btn-warning' : 'btn btn-outline-secondary'}"
+                                                th:title="${q.getIsPinned() ? 'Bỏ ghim' : 'Ghim'}">
+                                            <i class="bi bi-pin-fill"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Delete (only if NOT Admin's question) -->
+                                    <form th:if="${q.author.role != 'ADMIN'}"
+                                          th:action="@{'/manager/questions/' + ${q.id} + '/delete'}" 
+                                          method="post"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('XÓA câu hỏi này? Hành động này KHÔNG THỂ HOÀN TÁC!');">
+                                        <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                        </td>
+                    </tr>
+                        <tr th:if="${questions.isEmpty()}">
+                        <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">Không có câu hỏi nào.</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="card-footer bg-white" th:if="${totalPages > 1}">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    <!-- Previous -->
+                    <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+                        <a class="page-link" 
+                           th:href="@{/manager/questions(page=${currentPage - 1}, size=20, sortBy=${sortBy}, sortDir=${sortDir}, search=${search}, status=${status})}">
+                            <i class="bi bi-chevron-left"></i> Trước
+                        </a>
+                    </li>
+                    
+                    <!-- Page numbers -->
+                    <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:if="${i >= (currentPage - 2) && i <= (currentPage + 2)}"
+                        class="page-item"
+                        th:classappend="${i == currentPage ? 'active' : ''}">
+                        <a class="page-link" 
+                           th:href="@{/manager/questions(page=${i}, size=20, sortBy=${sortBy}, sortDir=${sortDir}, search=${search}, status=${status})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    
+                    <!-- Next -->
+                    <li class="page-item" th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+                        <a class="page-link" 
+                           th:href="@{/manager/questions(page=${currentPage + 1}, size=20, sortBy=${sortBy}, sortDir=${sortDir}, search=${search}, status=${status})}">
+                            Sau <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <p class="text-center text-muted mt-2 mb-0">
+                Trang <strong th:text="${currentPage + 1}">1</strong> / <strong th:text="${totalPages}">1</strong>
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Optional fade-in animation -->
+<style>
+    [layout\:fragment="content"] {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.875rem;
+    }
+</style>
+
+</body>
+</html>

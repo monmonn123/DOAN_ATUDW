@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Chi Tiết Câu Hỏi - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>
+            <i class="bi bi-question-circle text-primary"></i> Chi Tiết Câu Hỏi #<span th:text="${question.id}">1</span>
+        </h3>
+        <div class="btn-group">
+            <a th:href="@{/admin/questions}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay Lại
+            </a>
+            <a th:href="@{/admin/questions/{id}/edit(id=${question.id})}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Chỉnh Sửa
+            </a>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column: Question Details -->
+        <div class="col-lg-8">
+            <!-- Question Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-text"></i> Nội Dung Câu Hỏi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Title -->
+                    <div class="mb-4">
+                        <label class="text-muted small fw-bold">TIÊU ĐỀ</label>
+                        <h4 class="mt-1" th:text="${question.title}">Question Title</h4>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="mb-4">
+                        <label class="text-muted small fw-bold">NỘI DUNG</label>
+                        <div class="border rounded p-3 bg-light mt-1">
+                            <div th:utext="${question.body}">Question body content...</div>
+                        </div>
+                    </div>
+
+                    <!-- Images -->
+                    <div class="mb-4" th:if="${question.images != null && !question.images.isEmpty()}">
+                        <label class="text-muted small fw-bold">ẢNH ĐÍNH KÈM</label>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-3 col-sm-4 col-6" th:each="image : ${question.images}">
+                                <img th:src="@{'/api/images/' + ${image.id}}"
+                                     class="img-fluid rounded"
+                                     style="cursor: pointer; max-height: 150px; object-fit: cover; width: 100%;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="mb-4" th:if="${question.tags != null && !question.tags.isEmpty()}">
+                        <label class="text-muted small fw-bold">THẺ</label>
+                        <div class="mt-1">
+                            <span th:each="tag : ${question.tags}" 
+                                  class="badge bg-secondary me-1" 
+                                  th:text="${tag.name}">Tag</span>
+                        </div>
+                    </div>
+
+                    <!-- Metadata -->
+                    <hr>
+                    <div class="row text-muted small">
+                        <div class="col-md-4">
+                            <i class="bi bi-person-circle"></i>
+                            <strong>Tác giả:</strong>
+                            <a th:href="@{/admin/users/{id}(id=${question.author.id})}" 
+                               class="text-decoration-none ms-1" th:text="${question.author.username}">Author</a>
+                        </div>
+                        <div class="col-md-4">
+                            <i class="bi bi-calendar"></i>
+                            <strong>Tạo lúc:</strong>
+                            <span class="ms-1" th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+                        </div>
+                        <div class="col-md-4" th:if="${question.updatedAt != null}">
+                            <i class="bi bi-pencil-square"></i>
+                            <strong>Sửa lúc:</strong>
+                            <span class="ms-1" th:text="${#temporals.format(question.updatedAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answers Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-left-text"></i> 
+                        Câu Trả Lời (<span th:text="${question.answers != null ? question.answers.size() : 0}">0</span>)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${question.answers == null || question.answers.isEmpty()}" 
+                         class="text-center text-muted py-5">
+                        <i class="bi bi-inbox display-1"></i>
+                        <p class="mt-3">Chưa có câu trả lời nào</p>
+                    </div>
+
+                    <div th:if="${question.answers != null && !question.answers.isEmpty()}">
+                        <div th:each="answer, iterStat : ${question.answers}" 
+                             class="border-bottom pb-3 mb-3"
+                             th:classappend="${!iterStat.last} ? 'border-bottom' : ''">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span th:if="${answer.isAccepted}" 
+                                          class="badge bg-success">
+                                        <i class="bi bi-check-circle-fill"></i> Được Chấp Nhận
+                                    </span>
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-hand-thumbs-up"></i> <span th:text="${answer.votes}">0</span> votes
+                                    </span>
+                                </div>
+                                <a th:href="@{/admin/users/{id}(id=${answer.author.id})}" 
+                                   class="text-decoration-none small">
+                                    <i class="bi bi-person-circle"></i>
+                                    <span th:text="${answer.author.username}">Author</span>
+                                </a>
+                            </div>
+                            
+                            <div th:utext="${answer.body}" class="mb-2">Answer body...</div>
+                            
+                            <!-- Answer Images -->
+                            <div class="mb-2" th:if="${answer.images != null && !answer.images.isEmpty()}">
+                                <div class="row g-2">
+                                    <div class="col-md-2 col-sm-3 col-4" th:each="image : ${answer.images}">
+                                        <img th:src="@{'/api/images/' + ${image.id}}"
+                                             class="img-fluid rounded"
+                                             style="cursor: pointer; max-height: 80px; object-fit: cover; width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-muted small">
+                                <i class="bi bi-clock"></i>
+                                <span th:text="${#temporals.format(answer.createdAt, 'dd/MM/yyyy HH:mm')}">Date</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Stats & Actions -->
+        <div class="col-lg-4">
+            <!-- Stats Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart-fill"></i> Thống Kê
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <span><i class="bi bi-eye"></i> Lượt Xem</span>
+                        <h5 class="mb-0 text-primary" th:text="${question.views}">0</h5>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <span><i class="bi bi-hand-thumbs-up"></i> Votes</span>
+                        <h5 class="mb-0" th:classappend="${question.votes >= 0 ? 'text-success' : 'text-danger'}" 
+                            th:text="${question.votes}">0</h5>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <span><i class="bi bi-chat-left-text"></i> Câu Trả Lời</span>
+                        <h5 class="mb-0 text-success" th:text="${question.answers != null ? question.answers.size() : 0}">0</h5>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-star"></i> Reputation Tác Giả</span>
+                        <h5 class="mb-0 text-warning" th:text="${question.author.reputation}">0</h5>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-flag-fill"></i> Trạng Thái
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold">DUYỆT</label>
+                        <div class="mt-1">
+                            <span th:if="${question.isApproved}" class="badge bg-success fs-6">
+                                <i class="bi bi-check-circle-fill"></i> Đã Duyệt
+                            </span>
+                            <span th:unless="${question.isApproved}" class="badge bg-warning text-dark fs-6">
+                                <i class="bi bi-clock-fill"></i> Chờ Duyệt
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold">KHÓA</label>
+                        <div class="mt-1">
+                            <span th:if="${question.isLocked}" class="badge bg-danger fs-6">
+                                <i class="bi bi-lock-fill"></i> Đã Khóa
+                            </span>
+                            <span th:unless="${question.isLocked}" class="badge bg-success fs-6">
+                                <i class="bi bi-unlock-fill"></i> Đang Mở
+                            </span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="small text-muted fw-bold">GHIM</label>
+                        <div class="mt-1">
+                            <span th:if="${question.isPinned}" class="badge bg-primary fs-6">
+                                <i class="bi bi-pin-angle-fill"></i> Đã Ghim
+                            </span>
+                            <span th:unless="${question.isPinned}" class="badge bg-secondary fs-6">
+                                <i class="bi bi-pin"></i> Chưa Ghim
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-gear-fill"></i> Hành Động
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <!-- Approve/Reject -->
+                        <div th:if="${!question.isApproved}">
+                            <form th:action="@{/admin/questions/{id}/approve(id=${question.id})}" method="post" class="mb-2">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-check-circle-fill"></i> Duyệt Câu Hỏi
+                                </button>
+                            </form>
+                            <form th:action="@{/admin/questions/{id}/reject(id=${question.id})}" method="post" class="mb-3">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-x-circle-fill"></i> Từ Chối
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Toggle Lock -->
+                        <form th:action="@{/admin/questions/{id}/toggle-close(id=${question.id})}" method="post">
+                            <button type="submit" class="btn w-100" 
+                                    th:classappend="${question.isLocked} ? 'btn-success' : 'btn-outline-danger'">
+                                <i class="bi" th:classappend="${question.isLocked} ? 'bi-unlock-fill' : 'bi-lock-fill'"></i>
+                                <span th:text="${question.isLocked} ? 'Mở Khóa' : 'Khóa Câu Hỏi'">Toggle</span>
+                            </button>
+                        </form>
+
+                        <!-- Toggle Pin -->
+                        <form th:action="@{/admin/questions/{id}/toggle-pin(id=${question.id})}" method="post">
+                            <button type="submit" class="btn w-100" 
+                                    th:classappend="${question.isPinned} ? 'btn-outline-primary' : 'btn-primary'">
+                                <i class="bi" th:classappend="${question.isPinned} ? 'bi-pin-angle' : 'bi-pin-angle-fill'"></i>
+                                <span th:text="${question.isPinned} ? 'Bỏ Ghim' : 'Ghim Câu Hỏi'">Toggle Pin</span>
+                            </button>
+                        </form>
+
+                        <!-- Delete -->
+                        <hr>
+                        <form th:action="@{/admin/questions/{id}/delete(id=${question.id})}" 
+                              method="post" 
+                              onsubmit="return confirm('⚠️ Bạn có chắc chắn muốn XÓA VĨNH VIỄN câu hỏi này?\n\nHành động này KHÔNG THỂ HOÀN TÁC!');">
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="bi bi-trash3-fill"></i> Xóa Vĩnh Viễn
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

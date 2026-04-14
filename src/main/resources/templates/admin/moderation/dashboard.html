@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Kiểm Duyệt - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-shield-check"></i> Bảng Điều Khiển Kiểm Duyệt</h1>
+                </div>
+
+                <!-- Alert Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning shadow">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Câu Hỏi Chờ Duyệt</h6>
+                                        <h2 class="mb-0" th:text="${pendingQuestions}">0</h2>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-question-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                    </div>
+                                </div>
+                                <a th:href="@{/admin/moderation/questions/pending}" class="btn btn-light btn-sm mt-2 w-100">
+                                    <i class="bi bi-eye"></i> Xem Tất Cả
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success shadow">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Đã Duyệt</h6>
+                                        <h2 class="mb-0" th:text="${approvedQuestions}">0</h2>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-check-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                    </div>
+                                </div>
+                                <a th:href="@{/admin/questions}" class="btn btn-light btn-sm mt-2 w-100">
+                                    <i class="bi bi-eye"></i> Xem Tất Cả
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-danger shadow">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h6 class="card-title">Báo Cáo</h6>
+                                        <h2 class="mb-0" th:text="${totalReports ?: 0}">0</h2>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-flag" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                    </div>
+                                </div>
+                                <a th:href="@{/admin/reports}" class="btn btn-light btn-sm mt-2 w-100">
+                                    <i class="bi bi-eye"></i> Xem Tất Cả
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card shadow mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="m-0"><i class="bi bi-lightning"></i> Thao Tác Nhanh</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a th:href="@{/admin/moderation/questions/pending}" class="btn btn-outline-warning w-100 py-3">
+                                    <i class="bi bi-clock-history" style="font-size: 2rem;"></i><br>
+                                    <strong>Câu Hỏi Chờ Duyệt</strong><br>
+                                    <small>Xem và duyệt câu hỏi mới</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a th:href="@{/admin/moderation/comments/pending}" class="btn btn-outline-info w-100 py-3">
+                                    <i class="bi bi-chat-dots" style="font-size: 2rem;"></i><br>
+                                    <strong>Comments Chờ Duyệt</strong><br>
+                                    <small>Kiểm duyệt bình luận</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/admin/reports" class="btn btn-outline-danger w-100 py-3">
+                                    <i class="bi bi-flag" style="font-size: 2rem;"></i><br>
+                                    <strong>Báo Cáo</strong><br>
+                                    <small>Xử lý báo cáo vi phạm</small>
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a th:href="@{/admin/questions}" class="btn btn-outline-success w-100 py-3">
+                                    <i class="bi bi-list-check" style="font-size: 2rem;"></i><br>
+                                    <strong>Tất Cả Câu Hỏi</strong><br>
+                                    <small>Quản lý câu hỏi</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="m-0"><i class="bi bi-clock-history"></i> Hoạt Động Gần Đây</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success" th:if="${#lists.isEmpty(pendingQuestionsList)}">
+                            <i class="bi bi-check-circle"></i> Tuyệt vời! Không có mục nào chờ duyệt.
+                        </div>
+
+                        <div th:if="${not #lists.isEmpty(pendingQuestionsList)}">
+                            <h6>Câu Hỏi Mới Nhất Chờ Duyệt:</h6>
+                            <div class="list-group mb-4">
+                                <div class="list-group-item" th:each="q : ${pendingQuestionsList}">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-1" th:text="${q.title}">Question title</h6>
+                                            <small class="text-muted">
+                                                bởi <span th:text="${q.author.username}">author</span> - 
+                                                <span th:text="${#temporals.format(q.createdAt, 'dd/MM/yyyy HH:mm')}">date</span>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <form th:action="@{/admin/moderation/questions/{id}/approve(id=${q.id})}" method="post" style="display:inline;">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-check"></i> Duyệt
+                                                </button>
+                                            </form>
+                                            <form th:action="@{/admin/moderation/questions/{id}/reject(id=${q.id})}" method="post" style="display:inline;">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-x"></i> Từ Chối
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="card shadow mt-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="m-0"><i class="bi bi-info-circle"></i> Hướng Dẫn Kiểm Duyệt</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-check-square"></i> Tiêu Chí Duyệt Câu Hỏi:</h6>
+                                <ul>
+                                    <li>Tiêu đề rõ ràng, mô tả đúng vấn đề</li>
+                                    <li>Nội dung chi tiết, đầy đủ thông tin</li>
+                                    <li>Không spam, không quảng cáo</li>
+                                    <li>Không vi phạm quy định cộng đồng</li>
+                                    <li>Tags phù hợp với nội dung</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="bi bi-shield-check"></i> Thao Tác Quản Lý:</h6>
+                                <ul>
+                                    <li><strong>Approve:</strong> Duyệt nội dung phù hợp</li>
+                                    <li><strong>Reject:</strong> Từ chối nội dung vi phạm</li>
+                                    <li><strong>Lock:</strong> Khóa bài viết để ngăn trả lời</li>
+                                    <li><strong>Pin:</strong> Ghim bài quan trọng lên đầu</li>
+                                    <li><strong>Delete:</strong> Xóa nội dung nghiêm trọng vi phạm</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Lưu ý:</strong> Admin có toàn quyền kiểm duyệt tất cả nội dung. Hãy cẩn trọng khi từ chối hoặc xóa nội dung.
+                        </div>
+                    </div>
+                </div>
+
+</div>
+</body>
+</html>

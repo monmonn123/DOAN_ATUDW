@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${errorTitle} ?: 'Error'">Error</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body text-center py-5">
+                        <!-- Icon -->
+                        <div class="mb-4">
+                            <i class="display-1" 
+                               th:classappend="${errorIcon} ?: 'bi-exclamation-triangle'"
+                               th:style="${errorColor != null ? 'color: var(--bs-' + errorColor + ')' : 'color: var(--bs-warning)'}"></i>
+                        </div>
+                        
+                        <!-- Title -->
+                        <h2 class="mb-3" 
+                            th:classappend="${errorColor != null ? 'text-' + errorColor : 'text-warning'}"
+                            th:text="${errorTitle} ?: 'Đã Có Lỗi Xảy Ra'">
+                            Error Title
+                        </h2>
+                        
+                        <!-- Message -->
+                        <p class="text-muted mb-4 fs-5" 
+                           th:text="${errorMessage} ?: 'Vui lòng thử lại sau.'">
+                            Error message
+                        </p>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a th:href="@{/}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-house-fill"></i> Về Trang Chủ
+                            </a>
+                            <button onclick="history.back()" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Quay Lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Info (Optional) -->
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle"></i>
+                        Nếu bạn cho rằng đây là lỗi, vui lòng liên hệ với quản trị viên.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

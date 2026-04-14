@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Kết Quả Tìm Kiếm</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">
+        Kết quả tìm kiếm: <span class="text-primary" th:text="${searchQuery}">query</span>
+    </h1>
+    
+    <p class="text-muted mb-4">
+        Tìm thấy <strong th:text="${questions.getTotalElements()}">0</strong> kết quả
+    </p>
+    
+    <div th:if="${questions.isEmpty()}" class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Không tìm thấy kết quả nào.
+        <hr>
+        <p class="mb-0">Thử từ khóa khác hoặc <a th:href="@{/questions/ask}">đặt câu hỏi mới</a>.</p>
+    </div>
+    
+    <div th:each="question : ${questions}" class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2 text-center">
+                    <div class="mb-2">
+                        <strong th:text="${question.votes}">0</strong>
+                        <small class="text-muted d-block">phiếu</small>
+                    </div>
+                    <div class="mb-2">
+                        <strong th:text="${question.answers.size()}">0</strong>
+                        <small class="text-muted d-block">trả lời</small>
+                    </div>
+                    <div>
+                        <strong th:text="${question.views}">0</strong>
+                        <small class="text-muted d-block">lượt xem</small>
+                    </div>
+                </div>
+                <div class="col-md-10">
+                    <h5 class="card-title">
+                        <a th:href="@{/questions/{id}(id=${question.id})}" th:text="${question.title}">Question</a>
+                    </h5>
+                    <p class="card-text text-muted" th:text="${#strings.abbreviate(question.body, 200)}">Preview</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span th:each="tag : ${question.tags}" class="badge bg-secondary me-1" th:text="${tag.name}">tag</span>
+                        </div>
+                        <div class="text-muted small">
+                            đã hỏi <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy')}">date</span> bởi 
+                            <a th:href="@{/users/{id}(id=${question.author.id})}" th:text="${question.author.username}">user</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <nav th:if="${totalPages > 1}" aria-label="Search results pagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/search(q=${searchQuery}, page=${currentPage - 1})}">Previous</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                class="page-item" 
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/search(q=${searchQuery}, page=${i})}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/search(q=${searchQuery}, page=${currentPage + 1})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+

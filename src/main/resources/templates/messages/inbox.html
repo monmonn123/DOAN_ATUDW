@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Tin Nhắn</title>
+    <style>
+        /* Chat-specific styles */
+        .messages-container {
+            height: auto;
+            max-height: 500px;
+            overflow: hidden;
+        }
+        .conversations-list {
+            height: 500px;
+            overflow-y: auto;
+            border-right: 1px solid #dee2e6;
+        }
+        .conv-item {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .conv-item:hover {
+            background-color: #f8f9fa;
+        }
+        .conv-item.active {
+            background-color: #e7f3ff;
+            border-left: 3px solid #0d6efd;
+        }
+        .conv-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .conv-main {
+            flex: 1;
+            min-width: 0;
+        }
+        .conv-name {
+            font-weight: 600;
+            color: #212529;
+        }
+        .conv-preview {
+            color: #6c757d;
+            font-size: 0.875rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .conv-time {
+            font-size: 0.75rem;
+            color: #adb5bd;
+        }
+        .conv-unread {
+            background-color: #0d6efd;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            min-width: 20px;
+            text-align: center;
+        }
+        .chat-panel {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-header {
+            padding: 16px;
+            border-bottom: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+        }
+        .partner-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .partner-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .partner-status {
+            font-size: 0.875rem;
+            color: #28a745;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #fafafa;
+            height: 350px;
+            max-height: 350px;
+        }
+        .message-bubble {
+            max-width: 70%;
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        .message-sent {
+            margin-left: auto;
+            background-color: #0d6efd;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message-received {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-composer {
+            padding: 16px;
+            border-top: 1px solid #dee2e6;
+            background-color: white;
+        }
+        .composer-input {
+            flex: 1;
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 10px 16px;
+            resize: none;
+            max-height: 100px;
+        }
+        .composer-input:focus {
+            outline: none;
+            border-color: #0d6efd;
+        }
+        .chat-empty {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            text-align: center;
+        }
+        .search-input {
+            border-radius: 20px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .messages-container {
+                max-height: 400px;
+            }
+            .conversations-list {
+                height: 400px;
+            }
+            .chat-messages {
+                height: 300px;
+                max-height: 300px;
+            }
+        }
+        
+        /* Ensure page doesn't overflow */
+        body {
+            overflow-x: hidden;
+        }
+        
+        /* Fix card body to prevent overflow */
+        .messages-container .card-body {
+            padding: 0;
+        }
+    </style>
+</head>
+<body th:attr="data-current-user=${currentUser.username}">
+<div layout:fragment="content">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="bi bi-chat-dots"></i> Tin Nhắn
+            </h1>
+            <p class="text-muted mb-0">Your conversations</p>
+        </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+            <i class="bi bi-plus-circle"></i> Tin Nhắn Mới
+        </button>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="card messages-container">
+        <div class="row g-0 h-100">
+            <!-- Conversations List -->
+            <div class="col-md-4">
+                <div class="p-3 border-bottom">
+                    <input id="leftSearch" class="form-control search-input" placeholder="Search conversations..."/>
+                </div>
+                <div id="conversationsList" class="conversations-list" role="list">
+                    <!-- Conversation Items -->
+                    <div th:each="c : ${conversations}" class="conv-item d-flex align-items-start" role="listitem"
+                         th:attr="data-username=${c.username},data-display=${c.displayName},data-avatar=${c.avatar}">
+                        <img th:src="${c.avatar}" 
+                             alt="avatar" 
+                             class="conv-avatar me-3"/>
+                        <div class="conv-main">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div class="conv-name" th:text="${c.displayName}">Username</div>
+                                <div class="conv-time" th:if="${c.lastTimestamp != null}" 
+                                     th:data-timestamp="${c.lastTimestampISO}"
+                                     th:text="${#temporals.format(c.lastTimestamp,'HH:mm')}">12:34</div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="conv-preview flex-grow-1" th:text="${c.lastMessage}">Message preview...</div>
+                                <span th:if="${c.unread != null and c.unread > 0}" 
+                                      class="conv-unread ms-2" th:text="${c.unread}">3</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div th:if="${conversations.empty}" class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="mt-3 text-muted">No conversations yet</p>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+                            <i class="bi bi-plus-circle"></i> Start a conversation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Panel -->
+            <div class="col-md-8">
+                <!-- Empty State -->
+                <div id="chatPlaceholder" class="chat-empty">
+                    <div>
+                        <i class="bi bi-chat-square-text display-1 text-muted mb-3"></i>
+                        <h4>Select a conversation</h4>
+                        <p class="text-muted">Choose a conversation from the list or start a new one</p>
+                        <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+                            <i class="bi bi-plus-circle"></i> Tin Nhắn Mới
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Panel (will be shown when conversation selected) -->
+                <div id="chatPanel" class="chat-panel d-none" aria-live="polite">
+                    <!-- Chat Header -->
+                    <div class="chat-header d-flex align-items-center">
+                        <img id="partnerAvatar" class="partner-avatar me-3" 
+                             src="https://via.placeholder.com/40" alt="avatar"/>
+                        <div class="flex-grow-1">
+                            <div id="partnerName" class="partner-name">User Name</div>
+                            <div id="partnerStatus" class="partner-status">
+                                <i class="bi bi-circle-fill" style="font-size: 8px;"></i> Online
+                            </div>
+                        </div>
+                        <a th:href="@{/messages/sent}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-send"></i> Tin Nhắn Đã Gửi
+                        </a>
+                    </div>
+
+                    <!-- Chat Messages Area -->
+                    <div id="chatMessages" class="chat-messages" role="log" aria-live="polite">
+                        <!-- Messages will be loaded here via JavaScript -->
+                    </div>
+
+                    <!-- Message Composer -->
+                    <div class="chat-composer d-flex align-items-center gap-2">
+                        <button class="btn btn-light btn-sm" title="Emoji">
+                            <i class="bi bi-emoji-smile"></i>
+                        </button>
+                        <button class="btn btn-light btn-sm" title="Attach file">
+                                    <i class="bi bi-paperclip"></i>
+                                </button>
+                        <textarea id="messageInput" class="composer-input" 
+                                  placeholder="Nhập tin nhắn..." rows="1"></textarea>
+                        <button id="sendMessageBtn" class="btn btn-primary">
+                                    <i class="bi bi-send"></i> Gửi
+                                </button>
+                            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- New Message Modal -->
+    <div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newMessageModalLabel">
+                        <i class="bi bi-search"></i> Tin Nhắn Mới - Tìm Người Dùng
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="userSearchInput" class="form-label">Search by username or email:</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="userSearchInput" 
+                               placeholder="Type to search users..."
+                               autocomplete="off">
+                    </div>
+                    
+                    <div id="userSearchResults" class="mt-3">
+                        <p class="text-muted text-center">
+                            <i class="bi bi-search"></i> Start typing to search for users...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<!-- WebSocket libraries -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+console.log('🔄 Messages WebSocket Chat Loading...');
+
+// WebSocket connection
+// Use existing stompClient from custom.js if available, otherwise create new one
+// Note: custom.js declares stompClient for notifications, we'll reuse it or create our own
+var messagesStompClient = null;
+let currentPartner = null;
+const currentUsername = document.body.getAttribute('data-current-user');
+
+console.log('Current user:', currentUsername);
+
+// Connect to WebSocket
+function connect() {
+    console.log('🔄 Attempting WebSocket connection to /ws...');
+    
+    try {
+        const socket = new SockJS('/ws');
+        messagesStompClient = Stomp.over(socket);
+        
+        // Disable debug logs (optional)
+        // messagesStompClient.debug = null;
+        
+        messagesStompClient.connect({}, 
+            function(frame) {
+                console.log('✅ WebSocket Connected Successfully!');
+                console.log('Frame:', frame);
+                
+                // Subscribe to private messages
+                messagesStompClient.subscribe('/user/queue/messages', function(message) {
+                    console.log('📨 Received message:', message.body);
+                    try {
+                        // Parse JSON directly - Spring Boot handles UTF-8 automatically
+                        let messageBody = message.body;
+                        if (typeof messageBody !== 'string') {
+                            messageBody = new TextDecoder('utf-8').decode(messageBody);
+                        }
+                        const chatMessage = JSON.parse(messageBody);
+                        
+                        // Ensure content is properly decoded
+                        if (chatMessage.content) {
+                            chatMessage.content = ensureUTF8(chatMessage.content);
+                        }
+                        
+                        displayMessage(chatMessage);
+                        
+                        // Update conversation list timestamp
+                        updateConversationTimestamp(chatMessage);
+                        
+                        // Refresh timestamp display
+                        updateAllTimestamps();
+                    } catch (e) {
+                        console.error('Error parsing message:', e);
+                    }
+                });
+                
+                console.log('✅ Subscribed to /user/queue/messages for user:', currentUsername);
+                
+                // Start real-time timestamp updates
+                startTimestampUpdates();
+            }, 
+            function(error) {
+                console.error('❌ WebSocket Connection Error:');
+                console.error('Error type:', typeof error);
+                console.error('Error:', error);
+                
+                if (error.headers) {
+                    console.error('Error headers:', error.headers);
+                }
+                if (error.body) {
+                    console.error('Error body:', error.body);
+                }
+                
+                // Reconnect after 5s
+                console.log('⏳ Will attempt reconnection in 5 seconds...');
+                setTimeout(connect, 5000);
+            }
+        );
+    } catch (e) {
+        console.error('❌ Exception creating WebSocket connection:', e);
+        setTimeout(connect, 5000);
+    }
+}
+
+// Disconnect WebSocket
+function disconnect() {
+    if (messagesStompClient !== null) {
+        messagesStompClient.disconnect();
+        console.log('WebSocket Disconnected');
+    }
+}
+
+// Connect on page load
+connect();
+
+// Conversation selection
+document.querySelectorAll('.conv-item').forEach(item => {
+    item.addEventListener('click', function() {
+        // Remove active class from all items
+        document.querySelectorAll('.conv-item').forEach(i => i.classList.remove('active'));
+        
+        // Add active class to clicked item
+        this.classList.add('active');
+        
+        // Get user info
+        const username = this.getAttribute('data-username');
+        const displayName = this.getAttribute('data-display');
+        const avatar = this.getAttribute('data-avatar');
+        
+        // Set current partner
+        currentPartner = username;
+        
+        // Hide placeholder, show chat panel
+        document.getElementById('chatPlaceholder').classList.add('d-none');
+        document.getElementById('chatPanel').classList.remove('d-none');
+        
+        // Update chat header
+        document.getElementById('partnerName').textContent = displayName;
+        // Use avatar from data attribute or fallback to UI Avatars
+        const avatarUrl = avatar && avatar.trim() !== '' 
+            ? avatar 
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || username)}&size=40&background=0D6EFD&color=fff`;
+        document.getElementById('partnerAvatar').src = avatarUrl;
+        
+        // Load messages
+        loadConversation(username);
+    });
+});
+
+// Search conversations
+document.getElementById('leftSearch').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    document.querySelectorAll('.conv-item').forEach(item => {
+        const name = item.getAttribute('data-display').toLowerCase();
+        if (name.includes(query)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Update conversation timestamp in list
+function updateConversationTimestamp(msg) {
+    const partner = msg.from === currentUsername ? msg.to : msg.from;
+    const convItem = document.querySelector(`.conv-item[data-username="${CSS.escape(partner)}"]`);
+    
+    if (convItem) {
+        let timeEl = convItem.querySelector('.conv-time');
+        if (!timeEl) {
+            // Create time element if it doesn't exist
+            const nameDiv = convItem.querySelector('.conv-name');
+            if (nameDiv && nameDiv.parentElement) {
+                timeEl = document.createElement('div');
+                timeEl.className = 'conv-time';
+                nameDiv.parentElement.appendChild(timeEl);
+            }
+        }
+        
+        if (timeEl) {
+            const timestamp = msg.timestamp || msg.createdAt || new Date().toISOString();
+            timeEl.setAttribute('data-timestamp', timestamp);
+            timeEl.textContent = formatConversationTime(timestamp);
+        }
+        
+        // Update last message preview
+        const previewEl = convItem.querySelector('.conv-preview');
+        if (previewEl) {
+            previewEl.textContent = msg.content || msg.body || '';
+        }
+    }
+}
+
+// Load conversation messages via AJAX
+function loadConversation(username) {
+    const messagesDiv = document.getElementById('chatMessages');
+    messagesDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>';
+    
+    fetch(`/messages/api/conversation/${username}`, {
+        headers: {
+            'Accept': 'application/json;charset=UTF-8'
+        }
+    })
+        .then(response => {
+            // Response should be UTF-8 encoded from server
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            // Use response.json() which automatically handles UTF-8
+            return response.json();
+        })
+        .then(messages => {
+            messagesDiv.innerHTML = '';
+            
+            if (messages.length === 0) {
+                messagesDiv.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-chat-left-dots display-4 mb-3"></i>
+                        <p>Chưa có tin nhắn nào. Bắt đầu cuộc trò chuyện!</p>
+                    </div>
+                `;
+            } else {
+                // Messages from database should already be UTF-8 encoded
+                messages.forEach(msg => {
+                    displayMessage(msg);
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                
+                // Update timestamps after loading
+                updateAllTimestamps();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading messages:', error);
+            messagesDiv.innerHTML = `
+                <div class="text-center text-danger py-5">
+                    <i class="bi bi-exclamation-triangle display-4 mb-3"></i>
+                    <p>Error loading messages</p>
+                </div>
+            `;
+        });
+}
+
+// Display message in chat
+function displayMessage(msg) {
+    const messagesDiv = document.getElementById('chatMessages');
+    const isMine = msg.from === currentUsername || msg.isMine;
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = 'd-flex mb-3 ' + (isMine ? 'justify-content-end' : 'justify-content-start');
+    
+    const bubbleClass = isMine ? 'message-bubble message-sent' : 'message-bubble message-received';
+    const content = msg.content || msg.body;
+    const timestamp = msg.timestamp || msg.createdAt;
+    
+    // Create message bubble with timestamp data attribute for real-time updates
+    const bubbleEl = document.createElement('div');
+    bubbleEl.className = bubbleClass;
+    
+    // Use textContent to ensure proper UTF-8 handling
+    const contentEl = document.createElement('div');
+    contentEl.textContent = content || '';
+    bubbleEl.appendChild(contentEl);
+    
+    const timeEl = document.createElement('div');
+    timeEl.style.cssText = 'font-size: 0.75rem; opacity: 0.7; margin-top: 4px;';
+    timeEl.setAttribute('data-timestamp', timestamp || new Date().toISOString());
+    timeEl.className = 'message-time';
+    timeEl.textContent = formatTime(timestamp);
+    
+    bubbleEl.appendChild(timeEl);
+    messageEl.appendChild(bubbleEl);
+    
+    messagesDiv.appendChild(messageEl);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Send message via WebSocket
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    
+    if (!content || !currentPartner) {
+        console.log('⚠️ Cannot send: empty content or no partner selected');
+        return;
+    }
+    
+    console.log('Checking WebSocket connection...');
+    console.log('messagesStompClient:', messagesStompClient);
+    console.log('messagesStompClient.connected:', messagesStompClient ? messagesStompClient.connected : 'null');
+    
+    if (!messagesStompClient || !messagesStompClient.connected) {
+        console.error('❌ Not connected to WebSocket server');
+        alert('⚠️ Not connected to chat server.\n\nPlease check:\n1. Server is running\n2. Browser console for errors\n\nTrying to reconnect...');
+        connect(); // Try to reconnect
+        return;
+    }
+    
+    const chatMessage = {
+        from: currentUsername,
+        to: currentPartner,
+        content: content,
+        timestamp: new Date().toISOString()
+    };
+    
+    console.log('📤 Sending message to /app/chat.send:', chatMessage);
+    
+    try {
+        // Ensure UTF-8 encoding for JSON
+        const jsonString = JSON.stringify(chatMessage);
+        const headers = {
+            'content-type': 'application/json;charset=UTF-8'
+        };
+        messagesStompClient.send('/app/chat.send', headers, jsonString);
+        console.log('✅ Message sent successfully');
+        
+        // Clear input
+        input.value = '';
+        input.focus();
+    } catch (e) {
+        console.error('❌ Error sending message:', e);
+        alert('Error sending message: ' + e.message);
+    }
+}
+
+// Send button click
+document.getElementById('sendMessageBtn')?.addEventListener('click', sendMessage);
+
+// Enter to send
+document.getElementById('messageInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+// Utility functions
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Ensure UTF-8 encoding for string
+function ensureUTF8(str) {
+    if (typeof str !== 'string') return str;
+    // String from JSON is already UTF-8, just return as is
+    // This function is mainly for safety and future-proofing
+    return str;
+}
+
+// Format time with real-time updates - only show hour and minute (HH:mm)
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    // Always show HH:mm format (no seconds)
+    const timeString = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    // Today (same day) - just show time
+    if (date.getDate() === now.getDate() && 
+        date.getMonth() === now.getMonth() && 
+        date.getFullYear() === now.getFullYear()) {
+        return timeString;
+    }
+    
+    // This year - show date and time
+    if (date.getFullYear() === now.getFullYear()) {
+        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + timeString;
+    }
+    
+    // Older than this year - show full date and time
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + timeString;
+}
+
+// Update all timestamps in real-time
+function updateAllTimestamps() {
+    // Update message timestamps in chat
+    document.querySelectorAll('.message-time').forEach(el => {
+        const timestamp = el.getAttribute('data-timestamp');
+        if (timestamp) {
+            el.textContent = formatTime(timestamp);
+        }
+    });
+    
+    // Update conversation timestamps in list
+    document.querySelectorAll('.conv-item').forEach(item => {
+        const timeEl = item.querySelector('.conv-time');
+        if (timeEl && timeEl.getAttribute('data-timestamp')) {
+            const timestamp = timeEl.getAttribute('data-timestamp');
+            timeEl.textContent = formatConversationTime(timestamp);
+        }
+    });
+}
+
+// Format time for conversation list (shorter format) - only show hour and minute (HH:mm)
+function formatConversationTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    // Always show HH:mm format (no seconds)
+    const timeString = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    // Today (same day) - just show time
+    if (date.getDate() === now.getDate() && 
+        date.getMonth() === now.getMonth() && 
+        date.getFullYear() === now.getFullYear()) {
+        return timeString;
+    }
+    
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.getDate() === yesterday.getDate() && 
+        date.getMonth() === yesterday.getMonth() && 
+        date.getFullYear() === yesterday.getFullYear()) {
+        return 'Hôm qua ' + timeString;
+    }
+    
+    // This week
+    if (diff < 604800000) {
+        const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        return days[date.getDay()] + ' ' + timeString;
+    }
+    
+    // Older - show date and time
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) + ' ' + timeString;
+}
+
+// Start real-time timestamp updates (every 30 seconds)
+let timestampUpdateInterval = null;
+
+function startTimestampUpdates() {
+    // Clear existing interval if any
+    if (timestampUpdateInterval) {
+        clearInterval(timestampUpdateInterval);
+    }
+    
+    // Update immediately
+    updateAllTimestamps();
+    
+    // Update every 10 seconds for real-time accuracy
+    timestampUpdateInterval = setInterval(updateAllTimestamps, 10000);
+}
+
+// Stop timestamp updates
+function stopTimestampUpdates() {
+    if (timestampUpdateInterval) {
+        clearInterval(timestampUpdateInterval);
+        timestampUpdateInterval = null;
+    }
+}
+
+// Disconnect on page unload
+window.addEventListener('beforeunload', function() {
+    stopTimestampUpdates();
+    disconnect();
+});
+
+console.log('✅ Messages Chat Script Loaded');
+
+// Initialize timestamp updates when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add data-timestamp to existing conversation times
+    document.querySelectorAll('.conv-time').forEach(el => {
+        const text = el.textContent.trim();
+        if (text && !el.getAttribute('data-timestamp')) {
+            // Try to parse the time from server-side rendered text
+            // For now, we'll update on next server response or use current time
+            el.setAttribute('data-timestamp', new Date().toISOString());
+        }
+    });
+    
+    // Start real-time updates if WebSocket is not connected yet
+    if (!messagesStompClient || !messagesStompClient.connected) {
+        setTimeout(startTimestampUpdates, 1000);
+    }
+});
+
+// ==================== NEW MESSAGE MODAL ====================
+
+let searchTimeout;
+const userSearchInput = document.getElementById('userSearchInput');
+const userSearchResults = document.getElementById('userSearchResults');
+const newMessageModal = document.getElementById('newMessageModal');
+
+// Load initial user list when modal opens
+newMessageModal?.addEventListener('shown.bs.modal', function() {
+    console.log('Modal opened, loading user list...');
+    loadInitialUsers();
+});
+
+// Load initial users (top users or all users)
+function loadInitialUsers() {
+    userSearchResults.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Loading users...</div>';
+    
+    // Load all users (or top users)
+    fetch('/messages/api/search-users?query=')
+        .then(response => response.json())
+        .then(users => {
+            displayUsers(users);
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            userSearchResults.innerHTML = '<p class="text-danger text-center"><i class="bi bi-exclamation-triangle"></i> Error loading users</p>';
+        });
+}
+
+// Search users when typing
+userSearchInput?.addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    
+    if (query.length === 0) {
+        // If empty, show initial list
+        loadInitialUsers();
+        return;
+    }
+    
+    if (query.length < 2) {
+        return; // Wait for at least 2 characters
+    }
+    
+    // Debounce search
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        searchUsers(query);
+    }, 300);
+});
+
+// Search users via API
+function searchUsers(query) {
+    userSearchResults.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Searching...</div>';
+    
+    fetch(`/messages/api/search-users?query=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(users => {
+            displayUsers(users);
+        })
+        .catch(error => {
+            console.error('Error searching users:', error);
+            userSearchResults.innerHTML = '<p class="text-danger text-center"><i class="bi bi-exclamation-triangle"></i> Error searching users</p>';
+        });
+}
+
+// Display user list
+function displayUsers(users) {
+    if (users.length === 0) {
+        userSearchResults.innerHTML = '<p class="text-muted text-center"><i class="bi bi-inbox"></i> No users found</p>';
+        return;
+    }
+    
+    let html = '<div class="list-group" style="max-height: 400px; overflow-y: auto;">';
+    users.forEach(user => {
+        html += `
+            <button type="button" class="list-group-item list-group-item-action" onclick="startConversation('${user.username}', '${user.avatar}')">
+                <div class="d-flex align-items-center">
+                    <img src="${user.avatar}" class="rounded-circle me-3" width="40" height="40" alt="avatar">
+                    <div>
+                        <h6 class="mb-0">${user.username}</h6>
+                        <small class="text-muted">${user.reputation} reputation</small>
+                    </div>
+                </div>
+            </button>
+        `;
+    });
+    html += '</div>';
+    userSearchResults.innerHTML = html;
+}
+
+// Start conversation with selected user
+function startConversation(username, avatar) {
+    console.log('Starting conversation with:', username);
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('newMessageModal'));
+    modal.hide();
+    
+    // Clear search
+    userSearchInput.value = '';
+    userSearchResults.innerHTML = '<p class="text-muted text-center"><i class="bi bi-search"></i> Start typing to search for users...</p>';
+    
+    // Set current partner
+    currentPartner = username;
+    
+    // Hide placeholder, show chat panel
+    document.getElementById('chatPlaceholder').classList.add('d-none');
+    document.getElementById('chatPanel').classList.remove('d-none');
+    
+    // Update chat header
+    document.getElementById('partnerName').textContent = username;
+    // Use avatar from parameter or fallback to UI Avatars
+    const avatarUrl = avatar && avatar.trim() !== '' 
+        ? avatar 
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&size=40&background=0D6EFD&color=fff`;
+    document.getElementById('partnerAvatar').src = avatarUrl;
+    
+    // Load existing messages or show empty state
+    loadConversation(username);
+    
+    // Focus on message input
+    setTimeout(() => {
+        document.getElementById('messageInput')?.focus();
+    }, 500);
+}
+</script>
+</th:block>
+</body>
+</html>

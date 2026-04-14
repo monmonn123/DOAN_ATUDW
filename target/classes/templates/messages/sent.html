@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Sent Messages</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h2>Sent Messages</h2>
+                <p class="text-muted">Messages you have sent to other users</p>
+
+                <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+                <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <!-- 📨 Empty State -->
+                        <div th:if="${messages.empty}" class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">You haven't sent any messages yet.</p>
+                            <a href="/messages/compose" class="btn btn-primary">
+                                <i class="fas fa-pencil-alt"></i> Compose Message
+                            </a>
+                        </div>
+
+                        <!-- 🧾 Message Table -->
+                        <div th:if="${!messages.empty}">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>To</th>
+                                        <th>Subject</th>
+                                        <th>Date</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="message : ${messages}">
+                                        <!-- Avatar + Username -->
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img th:src="${message.receiver.profileImage != null && !#strings.isEmpty(message.receiver.profileImage)
+                                                    ? 'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + message.receiver.profileImage
+                                                    : 'https://ui-avatars.com/api/?name=' + message.receiver.username + '&size=24&background=0D6EFD&color=fff'}"
+                                                     class="rounded me-2" width="32" height="32" alt="avatar">
+                                                <a th:href="@{/users/{id}(id=${message.receiver.id})}"
+                                                   th:text="${message.receiver.username}"></a>
+                                            </div>
+                                        </td>
+
+                                        <!-- Subject -->
+                                        <td>
+                                            <a th:href="@{/messages/{id}(id=${message.id})}"
+                                               th:text="${message.subject != null && !#strings.isEmpty(message.subject) ? message.subject : '(No Subject)'}"></a>
+                                        </td>
+
+                                        <!-- Date -->
+                                        <td th:text="${#temporals.format(message.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+
+                                        <!-- Actions -->
+                                        <td class="text-center">
+                                            <a th:href="@{/messages/{id}(id=${message.id})}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 📄 Pagination -->
+                            <nav th:if="${totalPages > 1}" aria-label="Sent messages pagination">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/messages/sent(page=${currentPage - 1})}">Previous</a>
+                                    </li>
+                                    <li class="page-item"
+                                        th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                        th:classappend="${i == currentPage} ? 'active'">
+                                        <a class="page-link" th:href="@{/messages/sent(page=${i})}"
+                                           th:text="${i + 1}"></a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/messages/sent(page=${currentPage + 1})}">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

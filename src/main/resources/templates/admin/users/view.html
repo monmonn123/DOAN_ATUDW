@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Chi Tiết Người Dùng - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-person-circle"></i> Chi Tiết Người Dùng</h1>
+                    <div class="btn-toolbar">
+                        <a th:href="@{/admin/users}" class="btn btn-sm btn-outline-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Quay Lại
+                        </a>
+                        <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Sửa
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Alert Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- User Info -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <!-- Profile Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="m-0">Thông Tin Cơ Bản</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <!-- Avatar -->
+                                <div class="mb-3">
+                                    <img th:if="${user.profileImage != null && !user.profileImage.isEmpty()}" 
+                                         th:src="@{'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + ${user.profileImage}}" 
+                                         class="rounded-circle border border-3 border-primary"
+                                         width="150" height="150"
+                                         style="object-fit: cover;"
+                                         alt="Profile Picture">
+                                    <img th:if="${user.profileImage == null || user.profileImage.isEmpty()}"
+                                         th:src="@{'https://ui-avatars.com/api/?name=' + ${user.username} + '&size=150&background=0D6EFD&color=fff&bold=true'}" 
+                                         class="rounded-circle border border-3 border-secondary"
+                                         width="150" height="150"
+                                         alt="Default Avatar">
+                                </div>
+                                <h4 class="mt-3" th:text="${user.username}">username</h4>
+                                <p class="text-muted" th:text="${user.email}">email@example.com</p>
+                                <span class="badge" th:classappend="${user.role == 'ADMIN'} ? 'bg-danger' : (${user.role == 'MANAGER'} ? 'bg-warning' : 'bg-primary')" th:text="${user.role}">USER</span>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h6 class="m-0">Thao Tác Nhanh</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <!-- CHANGE ROLE - Inline Form -->
+                                    <div class="border rounded p-2 bg-light">
+                                        <form th:action="@{/admin/users/{id}/change-role(id=${user.id})}" method="post">
+                                            <label class="form-label small mb-1"><strong>Đổi Vai Trò:</strong></label>
+                                            <div class="input-group input-group-sm">
+                                                <select name="role" class="form-select" required>
+                                                    <option value="USER" th:selected="${user.role == 'USER'}">USER</option>
+                                                    <option value="MANAGER" th:selected="${user.role == 'MANAGER'}">MANAGER</option>
+                                                    <option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option>
+                                                </select>
+                                                <button type="submit" class="btn btn-info">
+                                                    <i class="bi bi-shield-check"></i> Đổi
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    
+                                    <!-- RESET PASSWORD - Inline Form -->
+                                    <div class="border rounded p-2 bg-light">
+                                        <form th:action="@{/admin/users/{id}/reset-password(id=${user.id})}" method="post">
+                                            <label class="form-label small mb-1"><strong>Đặt Lại Mật Khẩu:</strong></label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="password" name="newPassword" class="form-control" placeholder="Mật khẩu mới (min 6 ký tự)" required minlength="6">
+                                                <button type="submit" class="btn btn-warning">
+                                                    <i class="bi bi-key"></i> Đặt Lại
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    
+                                    <hr class="my-2">
+                                    
+                                    <form th:if="${!user.isBanned}" th:action="@{/admin/users/{id}/ban(id=${user.id})}" method="post" onsubmit="return confirm('Bạn có chắc muốn khóa người dùng này?')">
+                                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                                            <i class="bi bi-lock"></i> Khóa Người Dùng
+                                        </button>
+                                    </form>
+                                    <form th:if="${user.isBanned}" th:action="@{/admin/users/{id}/unban(id=${user.id})}" method="post">
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="bi bi-unlock"></i> Mở Khóa
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post" onsubmit="return confirm('CẢNH BÁO: Hành động này không thể hoàn tác! Bạn có chắc muốn xóa người dùng này?')">
+                                        <button type="submit" class="btn btn-danger btn-sm w-100">
+                                            <i class="bi bi-trash"></i> Xóa Người Dùng
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <!-- Statistics Cards -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card text-white bg-primary shadow">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="card-title mb-1">Câu Hỏi</h6>
+                                                <h3 class="mb-0" th:text="${questionCount}">0</h3>
+                                            </div>
+                                            <i class="bi bi-question-circle" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-white bg-success shadow">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="card-title mb-1">Câu Trả Lời</h6>
+                                                <h3 class="mb-0" th:text="${answerCount}">0</h3>
+                                            </div>
+                                            <i class="bi bi-chat-left-text" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-white bg-warning shadow">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="card-title mb-1">Danh Tiếng</h6>
+                                                <h3 class="mb-0" th:text="${user.reputation ?: 0}">0</h3>
+                                            </div>
+                                            <i class="bi bi-star-fill" style="font-size: 2.5rem; opacity: 0.5;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Details Card -->
+                        <div class="card shadow mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="m-0"><i class="bi bi-info-circle"></i> Chi Tiết Đầy Đủ</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th width="30%">ID:</th>
+                                        <td th:text="${user.id}">1</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Tên Người Dùng:</th>
+                                        <td th:text="${user.username}">username</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td th:text="${user.email}">email@example.com</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vai Trò:</th>
+                                        <td>
+                                            <span class="badge" th:classappend="${user.role == 'ADMIN'} ? 'bg-danger' : (${user.role == 'MANAGER'} ? 'bg-warning' : 'bg-primary')" th:text="${user.role}">USER</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Trạng Thái:</th>
+                                        <td>
+                                            <span th:if="${user.isBanned}" class="badge bg-danger">Bị Khóa</span>
+                                            <span th:unless="${user.isBanned}" class="badge bg-success">Hoạt Động</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${user.isBanned && user.banReason}">
+                                        <th>Lý Do Khóa:</th>
+                                        <td th:text="${user.banReason}">-</td>
+                                    </tr>
+                                    <tr th:if="${user.isBanned && user.bannedUntil}">
+                                        <th>Khóa Đến:</th>
+                                        <td th:text="${#temporals.format(user.bannedUntil, 'dd/MM/yyyy HH:mm')}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Danh Tiếng:</th>
+                                        <td>
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-star-fill"></i> <span th:text="${user.reputation ?: 0}">0</span>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vị Trí:</th>
+                                        <td>
+                                            <i class="bi bi-geo-alt text-muted"></i>
+                                            <span th:text="${user.location ?: 'Chưa cập nhật'}">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Giới Thiệu:</th>
+                                        <td th:text="${user.about ?: 'Chưa có giới thiệu'}">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Ngày Tham Gia:</th>
+                                        <td>
+                                            <i class="bi bi-calendar-check text-muted"></i>
+                                            <span th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${user.updatedAt}">
+                                        <th>Cập Nhật Cuối:</th>
+                                        <td>
+                                            <i class="bi bi-clock-history text-muted"></i>
+                                            <span th:text="${#temporals.format(user.updatedAt, 'dd/MM/yyyy HH:mm')}">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email Verified:</th>
+                                        <td>
+                                            <span th:if="${user.emailVerified}" class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Đã Xác Thực
+                                            </span>
+                                            <span th:unless="${user.emailVerified}" class="badge bg-warning">
+                                                <i class="bi bi-exclamation-circle"></i> Chưa Xác Thực
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Is Active:</th>
+                                        <td>
+                                            <span th:if="${user.isActive}" class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Active
+                                            </span>
+                                            <span th:unless="${user.isActive}" class="badge bg-secondary">
+                                                <i class="bi bi-x-circle"></i> Inactive
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// Admin User View - Inline Forms
+console.log('✅ Admin User View Page Loaded - Using Inline Forms');
+console.log('   Page:', window.location.href);
+</script>
+</th:block>
+</body>
+</html>

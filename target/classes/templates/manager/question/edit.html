@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+
+<head>
+    <title th:text="${pageTitle}">Chỉnh sửa câu hỏi</title>
+    <style>
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px;
+        }
+        .image-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-preview-item {
+            position: relative;
+            display: inline-block;
+        }
+        .remove-image {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: red;
+            color: white;
+            border-radius: 50%;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .existing-image-item {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        .existing-image {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+        }
+        
+        .tag-input-container {
+            position: relative;
+        }
+        
+        .tag-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .tag-suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        
+        .tag-suggestion-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h4 mb-0">
+                <i class="bi bi-pencil-square text-info"></i> Chỉnh sửa câu hỏi
+            </h1>
+            <p class="text-muted mb-0">ID: #<span th:text="${question.id}"></span> | 
+                Tác giả: <strong th:text="${question.author.username}"></strong>
+            </p>
+        </div>
+        <a th:href="@{/manager/questions}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form th:action="@{'/manager/questions/' + ${question.id} + '/update'}" 
+                  method="post" 
+                  enctype="multipart/form-data">
+                
+                <!-- Title -->
+                <div class="mb-4">
+                    <label for="title" class="form-label">
+                        <i class="bi bi-card-heading"></i> Tiêu đề câu hỏi <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control form-control-lg" 
+                           id="title" 
+                           name="title"
+                           th:value="${question.title}"
+                           required
+                           minlength="15"
+                           maxlength="200"
+                           placeholder="Câu hỏi cụ thể của bạn là gì?">
+                    <small class="form-text text-muted">
+                        Hãy cụ thể và tưởng tượng bạn đang hỏi một người khác
+                    </small>
+                </div>
+
+                <!-- Body -->
+                <div class="mb-4">
+                    <label for="body" class="form-label">
+                        <i class="bi bi-file-text"></i> Nội dung <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" 
+                              id="body" 
+                              name="body"
+                              rows="15"
+                              required
+                              placeholder="Bao gồm tất cả thông tin cần thiết để trả lời câu hỏi..."
+                              th:text="${question.body}"></textarea>
+                    <small class="form-text text-muted">
+                        Hỗ trợ Markdown: **bold**, *italic*, `code`, ```code block```, [link](url)
+                    </small>
+                </div>
+
+                <!-- Existing Images -->
+                <div class="mb-4" th:if="${question.images != null && !question.images.isEmpty()}">
+                    <label class="form-label">
+                        <i class="bi bi-images"></i> Ảnh hiện có
+                    </label>
+                    <div class="existing-images-container" id="existingImagesContainer">
+                        <div th:each="img : ${question.images}" class="existing-image-item">
+                            <img th:src="@{'/uploads/images/' + ${img.filename}}" 
+                                 class="existing-image" 
+                                 th:alt="${img.filename}">
+                            <button type="button" 
+                                    class="remove-image remove-image-btn" 
+                                    th:attr="data-image-id=${img.id}"
+                                    title="Xóa ảnh">
+                                ×
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Images Upload -->
+                <div class="mb-4">
+                    <label for="images" class="form-label">
+                        <i class="bi bi-cloud-upload"></i> Thêm ảnh mới (tùy chọn)
+                    </label>
+                    <input type="file" 
+                           class="form-control" 
+                           id="images" 
+                           name="images"
+                           multiple
+                           accept="image/*">
+                    <small class="form-text text-muted">
+                        Có thể chọn nhiều ảnh cùng lúc (JPG, PNG, GIF). Tối đa 5MB/ảnh.
+                    </small>
+                    
+                    <!-- Image Preview -->
+                    <div class="image-preview-container" id="imagePreviewContainer"></div>
+                </div>
+
+                <!-- Tags -->
+                <div class="mb-4">
+                    <label for="tags" class="form-label">
+                        <i class="bi bi-tags"></i> Tags
+                    </label>
+                    <div class="tag-input-container">
+                        <input type="text" 
+                               class="form-control" 
+                               id="tags" 
+                               name="tags"
+                               th:value="${question.tags != null ? #strings.listJoin(question.tags.![name], ',') : ''}"
+                               placeholder="java, spring-boot, mysql"
+                               autocomplete="off">
+                        <div class="tag-suggestions" id="tagSuggestions"></div>
+                    </div>
+                    <small class="form-text text-muted">
+                        Phân cách bằng dấu phẩy. Ví dụ: java, spring-boot, mysql
+                    </small>
+                </div>
+
+                <!-- Stats (Read-only info) -->
+                <div class="mb-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="bi bi-info-circle"></i> Thông tin</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Lượt xem:</small>
+                                    <p class="mb-0"><strong th:text="${question.views}">0</strong></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Votes:</small>
+                                    <p class="mb-0"><strong th:text="${question.votes}">0</strong></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Câu trả lời:</small>
+                                    <p class="mb-0"><strong th:text="${question.answerCount}">0</strong></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Trạng thái:</small>
+                                    <p class="mb-0">
+                                        <span th:if="${question.isApproved}" class="badge bg-success">Đã duyệt</span>
+                                        <span th:unless="${question.isApproved}" class="badge bg-warning">Chờ duyệt</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">Ngày tạo:</small>
+                                    <p class="mb-0" th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</p>
+                                </div>
+                                <div class="col-md-6" th:if="${question.updatedAt != null}">
+                                    <small class="text-muted">Cập nhật:</small>
+                                    <p class="mb-0" th:text="${#temporals.format(question.updatedAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-between">
+                    <a th:href="@{/manager/questions}" class="btn btn-secondary btn-lg">
+                        <i class="bi bi-x-circle"></i> Hủy
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save"></i> Lưu thay đổi
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// ==================== IMAGE PREVIEW ====================
+const imageInput = document.getElementById('images');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
+if (imageInput) {
+    imageInput.addEventListener('change', function(e) {
+        imagePreviewContainer.innerHTML = '';
+        const files = Array.from(e.target.files);
+        
+        files.forEach((file, index) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'image-preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" class="image-preview" alt="Preview">
+                        <span class="remove-image" onclick="removeNewImage(${index})">×</span>
+                    `;
+                    imagePreviewContainer.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+}
+
+function removeNewImage(index) {
+    const dt = new DataTransfer();
+    const files = Array.from(imageInput.files);
+    files.splice(index, 1);
+    files.forEach(file => dt.items.add(file));
+    imageInput.files = dt.files;
+    
+    // Trigger change to refresh preview
+    imageInput.dispatchEvent(new Event('change'));
+}
+
+// ==================== DELETE EXISTING IMAGES ====================
+const existingImagesContainer = document.getElementById('existingImagesContainer');
+
+if (existingImagesContainer) {
+    existingImagesContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-image-btn')) {
+            const imageId = e.target.getAttribute('data-image-id');
+            const questionId = [[${question.id}]];
+            
+            if (confirm('Xóa ảnh này?')) {
+                deleteImage(questionId, imageId, e.target.closest('.existing-image-item'));
+            }
+        }
+    });
+}
+
+function deleteImage(questionId, imageId, element) {
+    element.style.opacity = '0.5';
+    
+    fetch(`/questions/${questionId}/images/${imageId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            element.remove();
+            showToast('✅ Đã xóa ảnh!', 'success');
+        } else {
+            element.style.opacity = '1';
+            showToast('❌ Lỗi khi xóa ảnh!', 'danger');
+        }
+    })
+    .catch(error => {
+        element.style.opacity = '1';
+        showToast('❌ Lỗi: ' + error.message, 'danger');
+    });
+}
+
+function showToast(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// ==================== TAG AUTOCOMPLETE ====================
+const tagsInput = document.getElementById('tags');
+const tagSuggestions = document.getElementById('tagSuggestions');
+let tagTimeout;
+
+if (tagsInput) {
+    tagsInput.addEventListener('input', function(e) {
+        const value = e.target.value;
+        const lastComma = value.lastIndexOf(',');
+        const currentTag = lastComma >= 0 ? value.substring(lastComma + 1).trim() : value.trim();
+        
+        if (currentTag.length >= 1) {
+            clearTimeout(tagTimeout);
+            tagTimeout = setTimeout(() => {
+                fetchTagSuggestions(currentTag);
+            }, 300);
+        } else {
+            tagSuggestions.style.display = 'none';
+        }
+    });
+    
+    tagsInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            tagSuggestions.style.display = 'none';
+        }, 200);
+    });
+}
+
+function fetchTagSuggestions(query) {
+    fetch(`/api/tags/search?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(tags => {
+            if (tags.length > 0) {
+                displayTagSuggestions(tags);
+            } else {
+                tagSuggestions.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching tags:', error);
+        });
+}
+
+function displayTagSuggestions(tags) {
+    tagSuggestions.innerHTML = '';
+    tags.forEach(tag => {
+        const item = document.createElement('div');
+        item.className = 'tag-suggestion-item';
+        item.textContent = tag.name;
+        item.addEventListener('click', function() {
+            selectTag(tag.name);
+        });
+        tagSuggestions.appendChild(item);
+    });
+    tagSuggestions.style.display = 'block';
+}
+
+function selectTag(tagName) {
+    const value = tagsInput.value;
+    const lastComma = value.lastIndexOf(',');
+    
+    if (lastComma >= 0) {
+        tagsInput.value = value.substring(0, lastComma + 1) + ' ' + tagName + ', ';
+    } else {
+        tagsInput.value = tagName + ', ';
+    }
+    
+    tagSuggestions.style.display = 'none';
+    tagsInput.focus();
+}
+</script>
+</th:block>
+
+</body>
+</html>

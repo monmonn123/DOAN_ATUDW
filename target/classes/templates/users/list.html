@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Người Dùng</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">Người Dùng</h1>
+
+    <!-- Search Form -->
+    <form th:action="@{/users}" method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" 
+                   th:value="${searchQuery}" placeholder="Tìm kiếm người dùng...">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Tìm Kiếm
+            </button>
+        </div>
+    </form>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${sort == 'reputation' ? 'active' : ''}" 
+               th:href="@{/users(sort='reputation')}">Uy Tín</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${sort == 'newest' ? 'active' : ''}" 
+               th:href="@{/users(sort='newest')}">Người Dùng Mới</a>
+        </li>
+    </ul>
+
+    <!-- Users Grid -->
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        <div th:each="user : ${users}" class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img th:if="${user.profileImage}" 
+                             th:src="@{/uploads/users/{filename}(filename=${user.profileImage})}" 
+                             alt="Avatar" 
+                             class="rounded-circle" 
+                             style="width: 120px; height: 120px; object-fit: cover;">
+                        <i th:if="!${user.profileImage}" 
+                           class="bi bi-person-circle display-1"></i>
+                    </div>
+                    <h5 class="card-title text-center">
+                        <a th:href="@{/users/{id}(id=${user.id})}" 
+                           class="text-decoration-none" 
+                           th:text="${user.username}">
+                            username
+                        </a>
+                    </h5>
+                    <div class="text-center mb-2">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill"></i> <span th:text="${user.reputation}">0</span>
+                        </span>
+                    </div>
+                    <p class="card-text text-muted small text-center" 
+                       th:text="${user.location ?: 'Chưa cập nhật vị trí'}">
+                        Location
+                    </p>
+                    <div class="text-muted small text-center">
+                        Tham gia từ <span th:text="${#temporals.format(user.createdAt, 'MM/yyyy')}">date</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav th:if="${totalPages > 1}" aria-label="Users pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/users(page=${currentPage - 1}, sort=${sort})}">Previous</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                class="page-item" 
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/users(page=${i}, sort=${sort})}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/users(page=${currentPage + 1}, sort=${sort})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+

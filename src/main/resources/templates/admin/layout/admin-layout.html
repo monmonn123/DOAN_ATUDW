@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Quản Trị Hệ Thống'">Quản Trị Hệ Thống</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" th:href="@{/icon.ico}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Admin Custom CSS -->
+    <link th:href="@{/css/admin.css}" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+    
+    <th:block layout:fragment="extra-css"></th:block>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="p-3">
+                <h4 class="text-white mb-0">
+                    <i class="bi bi-shield-lock"></i> 
+                    Bảng Quản Trị
+                </h4>
+                <small class="text-white-50">Hệ Thống Quản Trị</small>
+            </div>
+            <hr class="text-white-50 mx-3">
+            
+            <!-- Navigation -->
+            <nav class="admin-nav">
+                <a th:href="@{/admin/dashboard}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/dashboard') ? 'active' : ''}">
+                    <i class="bi bi-speedometer2"></i>
+                    Trang Chủ
+                </a>
+                
+                <a th:href="@{/admin/all-features}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/all-features') ? 'active' : ''}">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    Tất Cả Tính Năng
+                </a>
+                
+                <div class="px-3 mt-3 mb-2">
+                    <small class="text-white-50 text-uppercase fw-bold">Quản Lý</small>
+                </div>
+                
+                <a th:href="@{/admin/users}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/users') ? 'active' : ''}">
+                    <i class="bi bi-people"></i>
+                    Người Dùng
+                </a>
+                
+                <a th:href="@{/admin/questions}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/questions') ? 'active' : ''}">
+                    <i class="bi bi-file-text"></i>
+                    Câu Hỏi
+                </a>
+                
+                <a th:href="@{/admin/comments}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/comments') ? 'active' : ''}">
+                    <i class="bi bi-chat-dots"></i>
+                    Bình Luận
+                </a>
+                
+                <div class="px-3 mt-3 mb-2">
+                    <small class="text-white-50 text-uppercase fw-bold">Hệ Thống</small>
+                </div>
+                
+                <a th:href="@{/admin/notifications/send}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/notifications') ? 'active' : ''}">
+                    <i class="bi bi-bell"></i>
+                    Gửi Thông Báo
+                </a>
+                
+                <a th:href="@{/admin/moderation}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/moderation') ? 'active' : ''}">
+                    <i class="bi bi-shield-check"></i>
+                    Kiểm Duyệt
+                </a>
+                
+                <a th:href="@{/admin/activity-logs}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/activity-logs') ? 'active' : ''}">
+                    <i class="bi bi-list-ul"></i>
+                    Nhật Ký Hoạt Động
+                </a>
+                
+                <a th:href="@{/admin/statistics}" 
+                   class="admin-nav-item"
+                   th:classappend="${#httpServletRequest.requestURI.contains('/admin/statistics') ? 'active' : ''}">
+                    <i class="bi bi-graph-up"></i>
+                    Thống Kê
+                </a>
+                
+                <hr class="text-white-50 mx-3 mt-3">
+                
+                <a th:href="@{/}" class="admin-nav-item">
+                    <i class="bi bi-house-door"></i>
+                    Về Trang Chủ
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Header -->
+            <div class="admin-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h4 mb-0" th:text="${pageTitle} ?: 'Quản Trị Hệ Thống'">Quản Trị Hệ Thống</h1>
+                    <nav class="admin-breadcrumb" th:if="${breadcrumbs}">
+                        <a th:href="@{/admin/dashboard}">Trang Chủ</a>
+                        <span class="admin-breadcrumb-separator">/</span>
+                        <span th:each="crumb, iterStat : ${breadcrumbs}">
+                            <a th:if="!iterStat.last" th:href="${crumb.url}" th:text="${crumb.label}">Label</a>
+                            <span th:if="iterStat.last" th:text="${crumb.label}">Current</span>
+                            <span th:if="!iterStat.last" class="admin-breadcrumb-separator">/</span>
+                        </span>
+                    </nav>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i>
+                            <span sec:authentication="name">Admin</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" th:href="@{/profile}"><i class="bi bi-person"></i> Hồ Sơ</a></li>
+                            <li><a class="dropdown-item" th:href="@{/profile/change-password}"><i class="bi bi-key"></i> Đổi Mật Khẩu</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="d-inline">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right"></i> Đăng Xuất
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="admin-alert admin-alert-success alert-dismissible fade show">
+                <i class="bi bi-check-circle"></i>
+                <span th:text="${successMessage}">Success message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${errorMessage}" class="admin-alert admin-alert-danger alert-dismissible fade show">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span th:text="${errorMessage}">Error message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${warningMessage}" class="admin-alert admin-alert-warning alert-dismissible fade show">
+                <i class="bi bi-exclamation-circle"></i>
+                <span th:text="${warningMessage}">Warning message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${infoMessage}" class="admin-alert admin-alert-info alert-dismissible fade show">
+                <i class="bi bi-info-circle"></i>
+                <span th:text="${infoMessage}">Info message</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Page Content -->
+            <div layout:fragment="content">
+                <!-- Page content goes here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- UTF-8 Encoding Support - Load first -->
+    <script th:src="@{/js/custom.js}"></script>
+    
+    <th:block layout:fragment="extra-js"></th:block>
+</body>
+</html>

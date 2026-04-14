@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Quản Lý Câu Hỏi - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-question-circle"></i> Quản Lý Câu Hỏi</h1>
+                </div>
+
+                <!-- Success/Error Messages -->
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Search and Filter -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <i class="bi bi-search"></i> Tìm Kiếm & Lọc
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/admin/questions}" method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <input type="text" name="search" class="form-control" placeholder="Tìm theo tiêu đề..." th:value="${search}">
+                            </div>
+                            <div class="col-md-3">
+                                <select name="status" class="form-select">
+                                    <option value="">Tất cả trạng thái</option>
+                                    <option value="approved" th:selected="${status == 'approved'}">Đã Duyệt</option>
+                                    <option value="pending" th:selected="${status == 'pending'}">Chờ Duyệt</option>
+                                    <option value="locked" th:selected="${status == 'locked'}">Đã Khóa</option>
+                                    <option value="pinned" th:selected="${status == 'pinned'}">Đã Ghim</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search"></i> Tìm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body">
+                                <h5 class="card-title">Tổng Câu Hỏi</h5>
+                                <h2 class="mb-0" th:text="${totalQuestions}">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body">
+                                <h5 class="card-title">Chờ Duyệt</h5>
+                                <h2 class="mb-0" th:text="${pendingQuestions}">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-danger">
+                            <div class="card-body">
+                                <h5 class="card-title">Đã Khóa</h5>
+                                <h2 class="mb-0" th:text="${lockedQuestions}">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info">
+                            <div class="card-body">
+                                <h5 class="card-title">Đã Ghim</h5>
+                                <h2 class="mb-0" th:text="${pinnedQuestions}">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Questions Table -->
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="m-0"><i class="bi bi-list"></i> Danh Sách Câu Hỏi</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tiêu Đề</th>
+                                        <th>Tác Giả</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Câu Trả Lời</th>
+                                        <th>Lượt Xem</th>
+                                        <th>Tạo Lúc</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="question : ${questions}">
+                                        <td th:text="${question.id}">1</td>
+                                        <td>
+                                            <a th:href="@{/questions/{id}(id=${question.id})}" th:text="${question.title}" target="_blank">Title</a>
+                                            <span th:if="${question.getIsPinned()}" class="badge bg-warning ms-2">
+                                                <i class="bi bi-pin"></i> Ghim
+                                            </span>
+                                            <span th:if="${question.getIsLocked()}" class="badge bg-danger ms-2">
+                                                <i class="bi bi-lock"></i> Khóa
+                                            </span>
+                                        </td>
+                                        <td th:text="${question.author.username}">Author</td>
+                                        <td>
+                                            <span th:if="${question.isApproved}" class="badge bg-success">Đã Duyệt</span>
+                                            <span th:unless="${question.isApproved}" class="badge bg-warning">Chờ Duyệt</span>
+                                        </td>
+                                        <td><span class="badge bg-info" th:text="${question.answerCount ?: 0}">0</span></td>
+                                        <td th:text="${question.views}">0</td>
+                                        <td th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy')}">01/01/2024</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <!-- Approve/Reject (chỉ hiện với bài chưa duyệt) -->
+                                                <form th:if="${!question.isApproved}" th:action="@{/admin/questions/{id}/approve(id=${question.id})}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-success" title="Duyệt Bài">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                </form>
+                                                <form th:if="${!question.isApproved}" th:action="@{/admin/questions/{id}/reject(id=${question.id})}" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn từ chối bài này?')">
+                                                    <button type="submit" class="btn btn-danger" title="Từ Chối">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Unapprove (chỉ hiện với bài đã duyệt) -->
+                                                <form th:if="${question.isApproved}" th:action="@{/admin/questions/{id}/unapprove(id=${question.id})}" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn chuyển bài này về CHỜ DUYỆT?')">
+                                                    <button type="submit" class="btn btn-warning" title="Chuyển về Chờ Duyệt">
+                                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Edit -->
+                                                <a th:href="@{/admin/questions/{id}/edit(id=${question.id})}" class="btn btn-outline-primary" title="Sửa">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                
+                                                <!-- Pin/Unpin -->
+                                                <form th:if="${!question.getIsPinned()}" th:action="@{/admin/questions/{id}/pin(id=${question.id})}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-outline-warning" title="Ghim">
+                                                        <i class="bi bi-pin"></i>
+                                                    </button>
+                                                </form>
+                                                <form th:if="${question.getIsPinned()}" th:action="@{/admin/questions/{id}/unpin(id=${question.id})}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-warning" title="Bỏ Ghim">
+                                                        <i class="bi bi-pin-fill"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Lock/Unlock -->
+                                                <form th:if="${!question.getIsLocked()}" th:action="@{/admin/questions/{id}/lock(id=${question.id})}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-outline-danger" title="Khóa">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
+                                                </form>
+                                                <form th:if="${question.getIsLocked()}" th:action="@{/admin/questions/{id}/unlock(id=${question.id})}" method="post" style="display:inline;">
+                                                    <button type="submit" class="btn btn-outline-success" title="Mở Khóa">
+                                                        <i class="bi bi-unlock"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                <!-- Delete -->
+                                                <form th:action="@{/admin/questions/{id}/delete(id=${question.id})}" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này?')">
+                                                    <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(questions)}">
+                                        <td colspan="8" class="text-center">Không tìm thấy câu hỏi nào</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav th:if="${totalPages > 1}">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/admin/questions(page=${currentPage - 1}, search=${search}, status=${status}, category=${category})}">Trước</a>
+                                </li>
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage} ? 'active'">
+                                    <a class="page-link" th:href="@{/admin/questions(page=${i}, search=${search}, status=${status}, category=${category})}" th:text="${i + 1}">1</a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/admin/questions(page=${currentPage + 1}, search=${search}, status=${status}, category=${category})}">Sau</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Chỉnh Sửa Hồ Sơ</title>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <style>
+        .avatar-upload-container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        #imageCropModal .modal-dialog {
+            max-width: 800px;
+        }
+        #cropperContainer {
+            max-height: 500px;
+            overflow: hidden;
+        }
+        #cropperImage {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container mt-4">
+        <h2><i class="bi bi-person-gear"></i> Chỉnh Sửa Hồ Sơ</h2>
+
+        <!-- Alerts -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="card shadow">
+            <div class="card-body">
+                <form th:action="@{/profile/update}" method="post" enctype="multipart/form-data">
+                    
+                    <!-- Profile Picture Section -->
+                    <div class="mb-4 text-center avatar-upload-container">
+                        <div class="mb-3">
+							<img th:if="${user.profileImage != null && !user.profileImage.isEmpty()}" 
+							     th:src="${avatarUrl != null ? avatarUrl : 'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + user.profileImage}" 
+							     class="rounded-circle border border-3 border-primary"
+							     width="150" height="150"
+							     style="object-fit: cover;"
+							     alt="Profile Picture"
+							     id="profilePreview"
+							     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('[[${user.username}]]') + '&size=150&background=0D6EFD&color=fff&bold=true';">
+
+                            <img th:if="${user.profileImage == null || user.profileImage.isEmpty()}"
+                                 th:src="${avatarUrl != null ? avatarUrl : 'https://ui-avatars.com/api/?name=' + user.username + '&size=150&background=0D6EFD&color=fff&bold=true'}" 
+                                 class="rounded-circle border border-3 border-secondary"
+                                 width="150" height="150"
+                                 alt="Default Avatar"
+                                 id="profilePreview">
+                        </div>
+                        <div>
+                            <label for="profilePictureInput" class="btn btn-primary btn-sm">
+                                <i class="bi bi-camera"></i> Đổi Ảnh Đại Diện
+                            </label>
+                            <input type="file" id="profilePictureInput" 
+                                   class="d-none" accept="image/*" onchange="handleImageSelect(event)">
+                            <input type="hidden" id="croppedImageData" name="croppedImageData">
+                            <input type="file" id="profilePicture" name="profilePicture" class="d-none">
+                            <button type="button" class="btn btn-outline-danger btn-sm ms-2" 
+                                    onclick="window.location.href='/profile/remove-picture'"
+                                    th:if="${user.profileImage != null && !user.profileImage.isEmpty()}">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle"></i> Nhấn để chọn ảnh, sau đó cắt theo kích thước mong muốn
+                        </small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Tên Đăng Nhập:</label>
+                                <input type="text" class="form-control" th:value="${user.username}" disabled>
+                                <small class="text-muted">Tên đăng nhập không thể thay đổi</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email: *</label>
+                                <input type="email" name="email" class="form-control" 
+                                       th:value="${user.email}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Giới Thiệu:</label>
+                        <textarea name="bio" class="form-control" rows="4" 
+                                  placeholder="Giới thiệu về bản thân..." th:text="${user.bio}"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Địa Chỉ:</label>
+                                <input type="text" name="location" class="form-control" 
+                                       th:value="${user.location}" placeholder="Thành phố, Quốc gia">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Website:</label>
+                                <input type="url" name="website" class="form-control" 
+                                       th:value="${user.website}" placeholder="https://yourwebsite.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">GitHub URL:</label>
+                                <input type="url" name="githubUrl" class="form-control" 
+                                       th:value="${user.githubUrl}" placeholder="https://github.com/username">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">LinkedIn URL:</label>
+                                <input type="url" name="linkedinUrl" class="form-control" 
+                                       th:value="${user.linkedinUrl}" placeholder="https://linkedin.com/in/username">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Lưu Thay Đổi
+                    </button>
+                    <a th:href="@{/profile/view}" class="btn btn-secondary">Hủy</a>
+                    <a th:href="@{/profile/change-password}" class="btn btn-warning float-end">
+                        <i class="bi bi-key"></i> Đổi Mật Khẩu
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Stats -->
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5><i class="bi bi-bar-chart"></i> Thống Kê Của Bạn</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h3 th:text="${user.points}">0</h3>
+                        <p class="text-muted">Điểm</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 th:text="${user.level}">1</h3>
+                        <p class="text-muted">Cấp Độ</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3 class="text-success" th:if="${user.isActive}">Hoạt Động</h3>
+                        <h3 class="text-danger" th:unless="${user.isActive}">Không Hoạt Động</h3>
+                        <p class="text-muted">Trạng Thái</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Image Crop Modal -->
+    <div class="modal fade" id="imageCropModal" tabindex="-1" aria-labelledby="imageCropModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageCropModalLabel">
+                        <i class="bi bi-crop"></i> Cắt Ảnh Đại Diện
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cropperContainer">
+                        <img id="cropperImage" src="" alt="Ảnh cần cắt">
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Kéo để di chuyển, cuộn để phóng to, kéo góc để thay đổi kích thước. Xem trước sẽ hiển thị dạng hình tròn.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="cropAndSave()">
+                        <i class="bi bi-check-circle"></i> Áp Dụng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<!-- Cropper.js Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+console.log('🔄 Avatar Upload Script Loading...');
+console.log('✅ Cropper.js loaded:', typeof Cropper !== 'undefined');
+console.log('✅ Bootstrap loaded:', typeof bootstrap !== 'undefined');
+
+let cropper = null;
+let currentFile = null;
+
+// Handle image selection
+function handleImageSelect(event) {
+    console.log('\n=== IMAGE SELECTED ===');
+    console.log('Event:', event);
+    console.log('Files:', event.target.files);
+    
+    const file = event.target.files[0];
+    if (!file) {
+        console.log('❌ No file selected');
+        return;
+    }
+    
+    console.log('📁 File info:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+    });
+    
+    // Validate file size (max 10MB for cropping, will be compressed after)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('⚠️ File is too large! Maximum size is 10MB.');
+        event.target.value = '';
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('⚠️ Please select an image file!');
+        event.target.value = '';
+        return;
+    }
+    
+    currentFile = file;
+    console.log('✅ File validation passed');
+    
+    // Read file and show in cropper modal
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        console.log('📸 File loaded, showing modal...');
+        
+        const image = document.getElementById('cropperImage');
+        console.log('Image element:', image);
+        image.src = e.target.result;
+        
+        // Show modal
+        const modalElement = document.getElementById('imageCropModal');
+        console.log('Modal element:', modalElement);
+        
+        const modal = new bootstrap.Modal(modalElement);
+        console.log('Bootstrap Modal instance created');
+        modal.show();
+        console.log('✅ Modal.show() called');
+        
+        // Initialize cropper after modal is shown
+        document.getElementById('imageCropModal').addEventListener('shown.bs.modal', function () {
+            console.log('🎯 Modal shown event fired');
+            
+            if (cropper) {
+                console.log('Destroying old cropper instance');
+                cropper.destroy();
+            }
+            
+            console.log('Creating new Cropper instance...');
+            cropper = new Cropper(image, {
+                aspectRatio: 1, // Square crop
+                viewMode: 2,
+                dragMode: 'move',
+                autoCropArea: 0.8,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                minContainerWidth: 300,
+                minContainerHeight: 300,
+                minCropBoxWidth: 150,
+                minCropBoxHeight: 150,
+            });
+            console.log('✅ Cropper instance created:', cropper);
+        }, { once: true });
+    };
+    
+    console.log('📖 Reading file as DataURL...');
+    reader.readAsDataURL(file);
+}
+console.log('✅ handleImageSelect function defined globally');
+
+// Crop and save
+function cropAndSave() {
+    if (!cropper) {
+        alert('❌ No image to crop!');
+        return;
+    }
+    
+    // Get cropped canvas
+    const canvas = cropper.getCroppedCanvas({
+        width: 400,  // Output size
+        height: 400,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+    });
+    
+    if (!canvas) {
+        alert('❌ Failed to crop image!');
+        return;
+    }
+    
+    // Convert to blob
+    canvas.toBlob(function(blob) {
+        if (!blob) {
+            alert('❌ Failed to process image!');
+            return;
+        }
+        
+        // Validate final size (max 5MB)
+        if (blob.size > 5 * 1024 * 1024) {
+            alert('⚠️ Cropped image is too large! Please select a smaller area or lower quality image.');
+            return;
+        }
+        
+        // Create File object from blob
+        const filename = currentFile.name;
+        const croppedFile = new File([blob], filename, { 
+            type: 'image/jpeg',
+            lastModified: Date.now()
+        });
+        
+        // Create FileList-like object
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(croppedFile);
+        
+        // Set to hidden file input for form submission
+        const fileInput = document.getElementById('profilePicture');
+        console.log('📎 Setting file to input:', fileInput);
+        
+        // Check if DataTransfer API is supported
+        if (dataTransfer && dataTransfer.files && dataTransfer.files.length > 0) {
+            fileInput.files = dataTransfer.files;
+            console.log('✅ File set using DataTransfer API');
+            console.log('   File name:', fileInput.files[0].name);
+            console.log('   File size:', fileInput.files[0].size);
+            console.log('   File type:', fileInput.files[0].type);
+        } else {
+            console.error('❌ DataTransfer API not supported, trying alternative method...');
+            // Fallback: Create a new input and replace the old one
+            const newInput = document.createElement('input');
+            newInput.type = 'file';
+            newInput.name = 'profilePicture';
+            newInput.id = 'profilePicture';
+            newInput.className = 'd-none';
+            newInput.accept = 'image/*';
+            
+            // Create a FileList-like object using DataTransfer
+            const dt = new DataTransfer();
+            dt.items.add(croppedFile);
+            newInput.files = dt.files;
+            
+            // Replace the old input
+            const form = fileInput.closest('form');
+            fileInput.parentNode.replaceChild(newInput, fileInput);
+            
+            console.log('✅ File set using alternative method');
+        }
+        
+        // Verify file was set
+        const finalFileInput = document.getElementById('profilePicture');
+        if (finalFileInput && finalFileInput.files && finalFileInput.files.length > 0) {
+            console.log('✅ Verified: File is ready for upload');
+            console.log('   Final file name:', finalFileInput.files[0].name);
+            console.log('   Final file size:', finalFileInput.files[0].size);
+        } else {
+            console.error('❌ ERROR: File was not set correctly!');
+            alert('⚠️ Lỗi: Không thể chuẩn bị file để upload. Vui lòng thử lại.');
+            return;
+        }
+        
+        // Update preview
+        const preview = document.getElementById('profilePreview');
+        preview.src = canvas.toDataURL('image/jpeg', 0.9);
+        preview.className = 'rounded-circle border border-3 border-success';
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('imageCropModal'));
+        modal.hide();
+        
+        // Destroy cropper
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        
+        showToast('✅ Image cropped! Click "Save Changes" to upload.', 'success');
+    }, 'image/jpeg', 0.9);
+}
+
+// Remove profile picture
+function removeProfilePicture() {
+    if (!confirm('⚠️ Are you sure you want to remove your profile picture?')) {
+        return;
+    }
+    
+    fetch('/profile/remove-picture', {
+        method: 'POST',
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (response.ok) {
+                // Update preview to default
+                const preview = document.getElementById('profilePreview');
+                preview.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent('[[${user.username}]]') + '&size=150&background=0D6EFD&color=fff&bold=true';
+                preview.className = 'rounded-circle border border-3 border-secondary';
+                
+                // Clear file inputs
+                document.getElementById('profilePictureInput').value = '';
+                document.getElementById('profilePicture').value = '';
+                
+                showToast('✅ Profile picture removed successfully!');
+            } else {
+                alert('❌ Failed to remove profile picture!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error removing profile picture!');
+        });
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    // Create toast container if not exists
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.className = 'position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Determine icon and color based on type
+    let icon = '📌';
+    let bgClass = 'bg-info';
+    if (type === 'success') {
+        icon = '✅';
+        bgClass = 'bg-success';
+    } else if (type === 'error') {
+        icon = '❌';
+        bgClass = 'bg-danger';
+    }
+    
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${icon} ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+    toast.show();
+    
+    // Remove toast after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+// Clean up on modal close
+document.getElementById('imageCropModal').addEventListener('hidden.bs.modal', function () {
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+    // Clear the file input
+    document.getElementById('profilePictureInput').value = '';
+});
+</script>
+</th:block>
+</body>
+</html>
+

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Chỉnh Sửa Người Dùng - Admin</title>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <style>
+        .avatar-upload-container {
+            max-width: 400px;
+        }
+        #imageCropModal .modal-dialog {
+            max-width: 800px;
+        }
+        #cropperContainer {
+            max-height: 500px;
+            overflow: hidden;
+        }
+        #cropperImage {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-pencil-square"></i> Chỉnh Sửa Người Dùng</h1>
+                    <div class="btn-toolbar">
+                        <a th:href="@{/admin/users/{id}(id=${user.id})}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay Lại
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card shadow mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="m-0">Thông Tin Người Dùng</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    Chỉnh sửa thông tin cơ bản. Để đổi mật khẩu, vai trò, hoặc khóa/mở khóa, vui lòng sử dụng thao tác nhanh ở trang chi tiết người dùng.
+                                </div>
+                                
+                                <hr>
+
+                                <form th:action="@{/admin/users/{id}/edit(id=${user.id})}" method="post" enctype="multipart/form-data">
+                                    
+                                    <!-- Profile Picture Section -->
+                                    <div class="mb-4 text-center avatar-upload-container mx-auto">
+                                        <div class="mb-3">
+                                            <img th:if="${user.profileImage != null && !user.profileImage.isEmpty()}" 
+                                                 th:src="@{'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + ${user.profileImage}}" 
+                                                 class="rounded-circle border border-3 border-primary"
+                                                 width="120" height="120"
+                                                 style="object-fit: cover;"
+                                                 alt="Profile Picture"
+                                                 id="profilePreview">
+                                            <img th:if="${user.profileImage == null || user.profileImage.isEmpty()}"
+                                                 th:src="@{'https://ui-avatars.com/api/?name=' + ${user.username} + '&size=120&background=0D6EFD&color=fff&bold=true'}" 
+                                                 class="rounded-circle border border-3 border-secondary"
+                                                 width="120" height="120"
+                                                 alt="Default Avatar"
+                                                 id="profilePreview">
+                                        </div>
+                                        <div>
+                                            <label for="profilePictureInput" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-camera"></i> Đổi Avatar
+                                            </label>
+                                            <input type="file" id="profilePictureInput" 
+                                                   class="d-none" accept="image/*" onchange="handleImageSelect(event)">
+                                            <input type="hidden" id="croppedImageData" name="croppedImageData">
+                                            <button type="button" class="btn btn-outline-danger btn-sm ms-2" 
+                                                    th:onclick="|if(confirm('Xóa avatar?')) window.location.href='/admin/users/${user.id}/remove-picture'|"
+                                                    th:if="${user.profileImage != null && !user.profileImage.isEmpty()}">
+                                                <i class="bi bi-trash"></i> Xóa
+                                            </button>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="bi bi-info-circle"></i> Click để chọn ảnh, sau đó cắt theo kích thước mong muốn
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="username" class="form-label fw-bold">Tên Người Dùng:</label>
+                                                <input type="text" class="form-control" id="username" th:value="${user.username}" readonly>
+                                                <small class="text-muted">Tên người dùng không thể thay đổi</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="email" class="form-label fw-bold">Email:</label>
+                                                <input type="email" class="form-control" id="email" name="email" th:value="${user.email}">
+                                                <small class="text-muted">Admin có thể thay đổi email</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="bio" class="form-label fw-bold">Bio / Giới Thiệu:</label>
+                                        <textarea class="form-control" id="bio" name="bio" rows="4" placeholder="Giới thiệu về bản thân..." th:text="${user.bio}"></textarea>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="location" class="form-label fw-bold">
+                                                    <i class="bi bi-geo-alt"></i> Vị Trí:
+                                                </label>
+                                                <input type="text" class="form-control" id="location" name="location" 
+                                                       th:value="${user.location}" placeholder="Ví dụ: Hà Nội, Việt Nam">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="website" class="form-label fw-bold">
+                                                    <i class="bi bi-globe"></i> Website:
+                                                </label>
+                                                <input type="url" class="form-control" id="website" name="website" 
+                                                       th:value="${user.website}" placeholder="https://yourwebsite.com">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="githubUrl" class="form-label fw-bold">
+                                                    <i class="bi bi-github"></i> GitHub URL:
+                                                </label>
+                                                <input type="url" class="form-control" id="githubUrl" name="githubUrl" 
+                                                       th:value="${user.githubUrl}" placeholder="https://github.com/username">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="linkedinUrl" class="form-label fw-bold">
+                                                    <i class="bi bi-linkedin"></i> LinkedIn URL:
+                                                </label>
+                                                <input type="url" class="form-control" id="linkedinUrl" name="linkedinUrl" 
+                                                       th:value="${user.linkedinUrl}" placeholder="https://linkedin.com/in/username">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="about" class="form-label fw-bold">About (Chi tiết):</label>
+                                        <textarea class="form-control" id="about" name="about" rows="3" 
+                                                  placeholder="Thông tin bổ sung..." th:text="${user.about}"></textarea>
+                                    </div>
+
+                                    <hr>
+
+                                    <!-- Read-only info -->
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Vai Trò:</label>
+                                                <p>
+                                                    <span class="badge" th:classappend="${user.role == 'ADMIN'} ? 'bg-danger' : (${user.role == 'MANAGER'} ? 'bg-warning' : 'bg-primary')" th:text="${user.role}">USER</span>
+                                                </p>
+                                                <small class="text-muted">Để đổi vai trò, sử dụng modal ở trang chi tiết</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Trạng Thái:</label>
+                                                <p>
+                                                    <span th:if="${user.isBanned}" class="badge bg-danger">Bị Khóa</span>
+                                                    <span th:unless="${user.isBanned}" class="badge bg-success">Hoạt Động</span>
+                                                </p>
+                                                <small class="text-muted">Để thay đổi trạng thái, sử dụng thao tác nhanh ở trang chi tiết</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr>
+
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <a th:href="@{/admin/users/{id}(id=${user.id})}" class="btn btn-secondary">
+                                            <i class="bi bi-x-circle"></i> Hủy
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Lưu Thay Đổi
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+    <!-- Image Crop Modal -->
+    <div class="modal fade" id="imageCropModal" tabindex="-1" aria-labelledby="imageCropModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageCropModalLabel">
+                        <i class="bi bi-crop"></i> Cắt Ảnh Avatar
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="cropperContainer">
+                        <img id="cropperImage" src="" alt="Image to crop">
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Kéo để di chuyển, scroll để zoom, kéo góc để thay đổi kích thước
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Hủy
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="cropImage()">
+                        <i class="bi bi-check-circle"></i> Xác Nhận
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<!-- Cropper.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<script>
+let cropper = null;
+let selectedFile = null;
+
+console.log('🔄 Admin User Edit - Avatar Upload Script Loading...');
+console.log('✅ Cropper.js loaded:', typeof Cropper !== 'undefined');
+console.log('✅ Bootstrap loaded:', typeof bootstrap !== 'undefined');
+
+function handleImageSelect(event) {
+    console.log('\n=== [HANDLE IMAGE SELECT] ===');
+    console.log('Event:', event);
+    console.log('Files:', event.target.files);
+    
+    const file = event.target.files[0];
+    if (!file) {
+        console.log('❌ No file selected');
+        return;
+    }
+    
+    console.log('📁 File info:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+    });
+    
+    if (!file.type.startsWith('image/')) {
+        alert('⚠️ Vui lòng chọn file ảnh!');
+        event.target.value = '';
+        return;
+    }
+    
+    // Validate file size (max 10MB for cropping, will be compressed after)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('⚠️ File quá lớn! Vui lòng chọn file nhỏ hơn 10MB.');
+        event.target.value = '';
+        return;
+    }
+    
+    selectedFile = file;
+    console.log('✅ File validation passed');
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        console.log('📸 File loaded, showing modal...');
+        
+        const cropperImage = document.getElementById('cropperImage');
+        console.log('Image element:', cropperImage);
+        cropperImage.src = e.target.result;
+        
+        // Show modal
+        const modalElement = document.getElementById('imageCropModal');
+        console.log('Modal element:', modalElement);
+        
+        const modal = new bootstrap.Modal(modalElement);
+        console.log('Bootstrap Modal instance created');
+        modal.show();
+        console.log('✅ Modal.show() called');
+        
+        // Initialize cropper when modal is shown
+        modalElement.addEventListener('shown.bs.modal', function () {
+            console.log('🎯 Modal shown event fired');
+            
+            if (cropper) {
+                console.log('Destroying old cropper instance');
+                cropper.destroy();
+            }
+            
+            console.log('Creating new Cropper instance...');
+            cropper = new Cropper(cropperImage, {
+                aspectRatio: 1, // Square crop
+                viewMode: 2,
+                dragMode: 'move',
+                autoCropArea: 0.8,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: true,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+                minContainerWidth: 300,
+                minContainerHeight: 300,
+                minCropBoxWidth: 150,
+                minCropBoxHeight: 150,
+            });
+            console.log('✅ Cropper instance created:', cropper);
+        }, { once: true });
+    };
+    
+    reader.onerror = function() {
+        console.error('❌ Error reading file');
+        alert('❌ Lỗi khi đọc file!');
+    };
+    
+    console.log('📖 Reading file as DataURL...');
+    reader.readAsDataURL(file);
+}
+
+function cropImage() {
+    if (!cropper) {
+        alert('❌ Không có ảnh để cắt!');
+        return;
+    }
+    
+    console.log('✂️ [CROP IMAGE] Starting crop process...');
+    
+    // Get cropped canvas
+    const canvas = cropper.getCroppedCanvas({
+        width: 400,
+        height: 400,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+    });
+    
+    if (!canvas) {
+        alert('❌ Không thể cắt ảnh!');
+        return;
+    }
+    
+    console.log('✅ [CROP IMAGE] Canvas created, converting to blob...');
+    
+    // Convert to blob and then to base64
+    canvas.toBlob(function(blob) {
+        if (!blob) {
+            alert('❌ Không thể xử lý ảnh!');
+            return;
+        }
+        
+        console.log('✅ [CROP IMAGE] Blob created, size: ' + blob.size);
+        
+        // Validate final size (max 5MB)
+        if (blob.size > 5 * 1024 * 1024) {
+            alert('⚠️ Ảnh sau khi cắt quá lớn! Vui lòng chọn vùng nhỏ hơn.');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            const base64data = reader.result;
+            console.log('✅ [CROP IMAGE] Base64 data created, length: ' + base64data.length);
+            
+            // Set to hidden input
+            const croppedInput = document.getElementById('croppedImageData');
+            if (croppedInput) {
+                croppedInput.value = base64data;
+                console.log('✅ [CROP IMAGE] Set to croppedImageData input');
+            } else {
+                console.error('❌ [CROP IMAGE] croppedImageData input not found!');
+            }
+            
+            // Update preview
+            const preview = document.getElementById('profilePreview');
+            if (preview) {
+                preview.src = base64data;
+                preview.className = 'rounded-circle border border-3 border-success';
+                console.log('✅ [CROP IMAGE] Preview updated');
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('imageCropModal'));
+            if (modal) {
+                modal.hide();
+                console.log('✅ [CROP IMAGE] Modal closed');
+            }
+            
+            // Destroy cropper
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+                console.log('✅ [CROP IMAGE] Cropper destroyed');
+            }
+            
+            // Show toast notification
+            showToast('✅ Ảnh đã được cắt! Nhấn "Lưu Thay Đổi" để upload lên S3.', 'success');
+        };
+        reader.onerror = function() {
+            console.error('❌ [CROP IMAGE] Error reading blob');
+            alert('❌ Lỗi khi xử lý ảnh!');
+        };
+        reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.9);
+}
+
+function showToast(message, type = 'info') {
+    // Simple toast notification (you can use Bootstrap Toast for better UX)
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-info';
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 3000);
+}
+
+// Clean up on modal close
+document.getElementById('imageCropModal').addEventListener('hidden.bs.modal', function () {
+    console.log('🔄 [MODAL CLOSED] Cleaning up...');
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+        console.log('✅ Cropper destroyed');
+    }
+    // Clear the file input
+    const fileInput = document.getElementById('profilePictureInput');
+    if (fileInput) {
+        fileInput.value = '';
+        console.log('✅ File input cleared');
+    }
+});
+
+console.log('✅ Admin User Edit Avatar Script Loaded');
+</script>
+</th:block>
+</body>
+</html>

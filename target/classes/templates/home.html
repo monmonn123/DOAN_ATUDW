@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Tất Cả Câu Hỏi</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="bi bi-question-circle text-primary"></i> Tất Cả Câu Hỏi
+            </h1>
+            <p class="text-muted mb-0">
+                <span th:text="${totalQuestions}">0</span> câu hỏi
+            </p>
+        </div>
+        <a th:href="@{/questions/ask}" class="btn btn-ask btn-lg" sec:authorize="isAuthenticated()">
+            <i class="bi bi-plus-circle"></i> Đặt Câu Hỏi
+        </a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-center">
+                <!-- Search -->
+                <div class="col-md-6">
+                    <form th:action="@{/search}" method="get" class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" name="q" class="form-control ps-5" placeholder="Tìm kiếm câu hỏi..." 
+                               th:value="${searchQuery}" />
+                    </form>
+                </div>
+                
+                <!-- Sort Options -->
+                <div class="col-md-3">
+                    <select class="form-select" onchange="window.location.href='?sort=' + this.value">
+                        <option value="newest" th:selected="${sort == 'newest'}">
+                            <i class="bi bi-clock"></i> Mới Nhất
+                        </option>
+                        <option value="active" th:selected="${sort == 'active'}">
+                            <i class="bi bi-lightning"></i> Hoạt Động
+                        </option>
+                        <option value="votes" th:selected="${sort == 'votes'}">
+                            <i class="bi bi-arrow-up"></i> Nhiều Phiếu Nhất
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-tab" th:classappend="${filter == 'all' or filter == null} ? 'active' : ''" 
+                onclick="window.location.href='?filter=all'">
+            <i class="bi bi-list-ul"></i> Tất Cả
+        </button>        
+    </div>
+
+    <!-- Questions List -->
+    <div th:if="${questions.isEmpty()}" class="text-center py-5">
+        <i class="bi bi-inbox display-1 text-muted"></i>
+        <h4 class="mt-3">Không tìm thấy câu hỏi nào</h4>
+        <p class="text-muted">Hãy là người đầu tiên đặt câu hỏi!</p>
+        <a th:href="@{/questions/ask}" class="btn btn-primary" sec:authorize="isAuthenticated()">
+            <i class="bi bi-plus-circle"></i> Đặt Câu Hỏi Đầu Tiên
+        </a>
+    </div>
+
+    <div th:each="question : ${questions}" class="question-item" 
+         th:classappend="${question.isPinned} ? 'question-pinned' : ''">
+        <div class="row g-0">
+            <!-- Stats Column -->
+            <div class="col-auto pe-3">
+                <div class="question-stats">
+                    <div class="stat" th:classappend="${question.votes > 0} ? 'has-votes' : ''">
+                        <div class="stat-value" th:text="${question.votes}">0</div>
+                        <div class="stat-label">phiếu</div>
+                    </div>
+                    <div class="stat" 
+                         th:classappend="(${question.answerCount > 0} ? 'has-answers ' : '') + (${question.acceptedAnswer != null} ? 'answered' : '')">
+                        <div class="stat-value" th:text="${question.answerCount}">0</div>
+                        <div class="stat-label">trả lời</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" th:text="${question.views}">0</div>
+                        <div class="stat-label">lượt xem</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Column -->
+            <div class="col">
+                <!-- Badges (Pinned/Locked) -->
+                <div class="mb-2" th:if="${question.isPinned or question.isLocked}">
+                    <span class="badge badge-pinned" th:if="${question.isPinned}">
+                        <i class="bi bi-pin-angle-fill"></i> Đã Ghim
+                    </span>
+                    <span class="badge badge-locked" th:if="${question.isLocked}">
+                        <i class="bi bi-lock-fill"></i> Đã Khóa
+                    </span>
+                </div>
+                
+                <!-- Title -->
+                <h5 class="mb-2">
+                    <a th:href="@{/questions/{id}(id=${question.id})}" 
+                       class="question-title" 
+                       th:text="${question.title}">
+                        Question Title
+                    </a>
+                </h5>
+                
+                <!-- Excerpt -->
+                <p class="question-excerpt" th:text="${#strings.abbreviate(question.body, 250)}">
+                    Question body preview...
+                </p>
+                
+                <!-- Meta (Tags + Author) -->
+                <div class="question-meta">
+                    <!-- Tags -->
+                    <div class="question-tags">
+                        <a th:each="tag : ${question.tags}" 
+                           th:href="@{/tags/{name}(name=${tag.name})}" 
+                           class="tag-badge"
+                           th:text="${tag.name}">
+                            tag
+                        </a>
+                    </div>
+                    
+                    <!-- Author & Time -->
+                    <div class="question-author">
+                        <img th:if="${question.author.profileImage != null and question.author.profileImage != '' and !question.author.profileImage.startsWith('http')}"
+                             th:src="${'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + question.author.profileImage}"
+                             class="user-avatar" alt="avatar"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('[[${question.author.username}]]') + '&size=24&background=0D6EFD&color=fff';">
+                        <img th:if="${question.author.profileImage != null and question.author.profileImage != '' and question.author.profileImage.startsWith('http')}"
+                             th:src="${question.author.profileImage}"
+                             class="user-avatar" alt="avatar"
+                             onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('[[${question.author.username}]]') + '&size=24&background=0D6EFD&color=fff';">
+                        <img th:if="${question.author.profileImage == null or question.author.profileImage == ''}"
+                             th:src="${'https://ui-avatars.com/api/?name=' + #strings.replace(question.author.username, ' ', '+') + '&size=24&background=0D6EFD&color=fff'}"
+                             class="user-avatar" alt="avatar">
+                        <a th:href="@{/users/{id}(id=${question.author.id})}" 
+                           th:text="${question.author.username}">
+                            username
+                        </a>
+                        <span class="text-muted">
+                            đã hỏi <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy ''lúc'' HH:mm')}">date</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav th:if="${totalPages > 1}" aria-label="Questions pagination" class="mt-5">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/(page=${currentPage - 1}, sort=${sort})}">
+                    <i class="bi bi-chevron-left"></i> Trước
+                </a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                class="page-item" 
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/(page=${i}, sort=${sort})}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/(page=${currentPage + 1}, sort=${sort})}">
+                    Sau <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+

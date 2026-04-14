@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Quản Lý Câu Trả Lời - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2"><i class="bi bi-chat-right-text"></i> Quản Lý Câu Trả Lời</h1>
+        </div>
+
+        <!-- Alert Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card text-white bg-success shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Tổng Số Câu Trả Lời</h6>
+                                <h2 class="mb-0" th:text="${totalAnswers}">0</h2>
+                            </div>
+                            <i class="bi bi-chat-right-text" style="font-size: 3rem; opacity: 0.5;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="card mb-4 shadow">
+            <div class="card-body">
+                <form th:action="@{/admin/answers}" method="get" class="row g-3">
+                    <div class="col-md-10">
+                        <label for="search" class="form-label"><i class="bi bi-search"></i> Tìm Kiếm</label>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               placeholder="Tìm kiếm theo nội dung câu trả lời..." th:value="${search}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-search"></i> Tìm Kiếm
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Answers Table -->
+        <div class="card shadow">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="m-0"><i class="bi bi-list"></i> Danh Sách Câu Trả Lời (<span th:text="${totalItems}">0</span>)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">ID</th>
+                                <th style="width: 40%;">Nội Dung</th>
+                                <th style="width: 120px;">Tác Giả</th>
+                                <th style="width: 25%;">Câu Hỏi</th>
+                                <th style="width: 80px;">Votes</th>
+                                <th style="width: 100px;">Thời Gian</th>
+                                <th style="width: 120px;" class="text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="answer : ${answers}">
+                                <td th:text="${answer.id}">1</td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 500px;" th:utext="${#strings.abbreviate(answer.body, 100)}" th:title="${answer.body}">
+                                        Answer text...
+                                    </div>
+                                    <span th:if="${answer.isAccepted}" class="badge bg-success mt-1">
+                                        <i class="bi bi-check-circle-fill"></i> Được Chấp Nhận
+                                    </span>
+                                </td>
+                                <td>
+                                    <span th:text="${answer.author.username}">Author</span>
+                                    <br>
+                                    <small class="badge" th:classappend="${answer.author.role == 'ADMIN'} ? 'bg-danger' : (${answer.author.role == 'MANAGER'} ? 'bg-warning' : 'bg-primary')" 
+                                           th:text="${answer.author.role}">USER</small>
+                                </td>
+                                <td>
+                                    <a th:href="@{/questions/{id}(id=${answer.question.id})}" target="_blank" 
+                                       class="text-decoration-none">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                        <span th:text="${#strings.abbreviate(answer.question.title, 50)}">Question</span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${answer.votes >= 0} ? 'bg-success' : 'bg-danger'">
+                                        <i th:class="${answer.votes >= 0} ? 'bi bi-arrow-up' : 'bi bi-arrow-down'"></i>
+                                        <span th:text="${answer.votes}">0</span>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small th:text="${#temporals.format(answer.createdAt, 'dd/MM/yyyy')}" class="d-block">01/01/2024</small>
+                                    <small th:text="${#temporals.format(answer.createdAt, 'HH:mm')}" class="text-muted">10:00</small>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <!-- View Question -->
+                                        <a th:href="@{/questions/{id}(id=${answer.question.id})}" 
+                                           target="_blank" class="btn btn-outline-info" title="Xem Câu Hỏi">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        <!-- Delete -->
+                                        <form th:action="@{/admin/answers/{id}/delete(id=${answer.id})}" 
+                                              method="post" style="display:inline;" 
+                                              onsubmit="return confirm('Xóa câu trả lời này?')">
+                                            <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(answers)}">
+                                <td colspan="7" class="text-center py-4">
+                                    <i class="bi bi-inbox display-4 text-muted"></i>
+                                    <p class="text-muted mt-2">Không có câu trả lời nào</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div th:if="${totalPages > 1}" class="card-footer">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/answers(page=${currentPage - 1}, search=${search})}">
+                                    <i class="bi bi-chevron-left"></i> Trước
+                                </a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/answers(page=${i}, search=${search})}" 
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/answers(page=${currentPage + 1}, search=${search})}">
+                                    Sau <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

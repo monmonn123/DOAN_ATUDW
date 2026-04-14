@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>My Questions</title>
+    <style>
+        .question-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .badge-pending {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .badge-approved {
+            background-color: #28a745;
+            color: #fff;
+        }
+        .filter-tabs .nav-link {
+            color: #6c757d;
+            border: none;
+            border-bottom: 3px solid transparent;
+        }
+        .filter-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background: none;
+        }
+        .filter-tabs .nav-link:hover {
+            color: #0d6efd;
+        }
+        .stats-badge {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="container py-4">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">
+                    <i class="bi bi-file-earmark-text"></i> Câu Hỏi Của Tôi
+                </h1>
+                <a th:href="@{/questions/ask}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Đặt Câu Hỏi Mới
+                </a>
+            </div>
+
+            <!-- Filter Tabs -->
+            <ul class="nav nav-tabs filter-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${filter == 'all'} ? 'active'" 
+                       th:href="@{/profile/my-questions(filter='all')}">
+                        <i class="bi bi-list"></i> Tất Cả
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${filter == 'approved'} ? 'active'" 
+                       th:href="@{/profile/my-questions(filter='approved')}">
+                        <i class="bi bi-check-circle"></i> Đã Duyệt
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${filter == 'pending'} ? 'active'" 
+                       th:href="@{/profile/my-questions(filter='pending')}">
+                        <i class="bi bi-clock-history"></i> Chờ Duyệt
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Questions List -->
+            <div th:if="${questions.isEmpty()}" class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                <span th:if="${filter == 'all'}">Bạn chưa có câu hỏi nào.</span>
+                <span th:if="${filter == 'approved'}">Bạn chưa có câu hỏi nào đã được duyệt.</span>
+                <span th:if="${filter == 'pending'}">Bạn không có câu hỏi nào đang chờ duyệt.</span>
+            </div>
+
+            <div class="row" th:if="${!questions.isEmpty()}">
+                <div class="col-12 mb-3" th:each="question : ${questions.content}">
+                    <div class="card question-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a th:href="@{/questions/{id}(id=${question.id})}" 
+                                       class="text-decoration-none text-dark">
+                                        <span th:text="${question.title}">Question Title</span>
+                                    </a>
+                                </h5>
+                                <span class="status-badge ms-2" 
+                                      th:classappend="${question.isApproved} ? 'badge-approved' : 'badge-pending'">
+                                    <i class="bi" th:classappend="${question.isApproved} ? 'bi-check-circle-fill' : 'bi-clock-fill'"></i>
+                                    <span th:text="${question.isApproved} ? 'Đã duyệt' : 'Chờ duyệt'">Status</span>
+                                </span>
+                            </div>
+
+                            <p class="card-text text-muted" 
+                               th:utext="${#strings.abbreviate(question.body, 200)}">
+                                Question body preview...
+                            </p>
+
+                            <!-- Tags -->
+                            <div class="mb-3" th:if="${question.tags != null && !question.tags.isEmpty()}">
+                                <span class="badge bg-secondary me-1" th:each="tag : ${question.tags}" 
+                                      th:text="${tag.name}">tag</span>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-light text-dark stats-badge">
+                                        <i class="bi bi-hand-thumbs-up"></i> 
+                                        <span th:text="${question.votes ?: 0}">0</span> votes
+                                    </span>
+                                    <span class="badge bg-light text-dark stats-badge">
+                                        <i class="bi bi-chat-left-text"></i> 
+                                        <span th:text="${question.answerCount ?: 0}">0</span> answers
+                                    </span>
+                                    <span class="badge bg-light text-dark stats-badge" 
+                                          th:if="${question.views != null}">
+                                        <i class="bi bi-eye"></i> 
+                                        <span th:text="${question.views}">0</span> views
+                                    </span>
+                                </div>
+                                
+                                <div class="text-muted small">
+                                    <i class="bi bi-clock"></i>
+                                    <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy HH:mm')}">
+                                        01/01/2025
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Pending Alert -->
+                            <div class="alert alert-warning mt-3 mb-0" 
+                                 th:if="${!question.isApproved}">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <small>
+                                    <strong>Câu hỏi đang chờ kiểm duyệt.</strong> 
+                                    Chỉ bạn, Manager và Admin mới thấy được câu hỏi này. 
+                                    Sau khi được duyệt, câu hỏi sẽ hiển thị công khai.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a th:href="@{/questions/{id}(id=${question.id})}" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Xem
+                                </a>
+                                <a th:href="@{/questions/{id}/edit(id=${question.id})}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Sửa
+                                </a>
+                                <button type="button" class="btn btn-outline-danger"
+                                        th:onclick="'deleteQuestion(' + ${question.id} + ')'">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav th:if="${totalPages > 1}" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" 
+                           th:href="@{/profile/my-questions(page=${currentPage - 1}, filter=${filter})}">
+                            <i class="bi bi-chevron-left"></i> Trước
+                        </a>
+                    </li>
+                    
+                    <li class="page-item" 
+                        th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" 
+                           th:href="@{/profile/my-questions(page=${i}, filter=${filter})}"
+                           th:text="${i + 1}">1</a>
+                    </li>
+                    
+                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                        <a class="page-link" 
+                           th:href="@{/profile/my-questions(page=${currentPage + 1}, filter=${filter})}">
+                            Sau <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+
+    <script layout:fragment="scripts">
+        function deleteQuestion(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/questions/' + id + '/delete';
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
+</body>
+</html>
+

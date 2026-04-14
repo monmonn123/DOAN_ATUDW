@@ -1,0 +1,20 @@
+# ⚠️ TO DELETE
+
+This file is a DUPLICATE and causes bean name conflict.
+
+**File to DELETE**: 
+```
+src/main/java/com/edumoet/service/FileStorageService.java
+```
+
+**Reason**: 
+- Spring found 2 beans with same name: FileStorageService
+- One from: `com.edumoet.service.FileStorageService` (this file - MY MISTAKE)
+- One from: `com.edumoet.service.common.FileStorageService` (existing AWS S3)
+
+**Solution**: 
+1. Delete this file (show in File Explorer, delete it)
+2. Use `LocalFileStorageService.java` instead (I renamed it)
+3. Recompile: `mvn clean compile`
+
+That's it!

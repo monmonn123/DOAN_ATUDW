@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Câu Hỏi</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Moderation Alert -->
+    <div class="alert alert-warning" th:if="${!question.isApproved}">
+        <i class="bi bi-hourglass-split"></i> 
+        <strong>Câu hỏi đang chờ kiểm duyệt</strong> - Câu hỏi này sẽ chỉ hiển thị công khai sau khi được quản trị viên phê duyệt.
+    </div>
+    
+    <!-- Question -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-1 text-center vote-buttons">
+                    <!-- Upvote button: +1 vote -->
+                    <button class="btn btn-sm mb-2 upvote-btn" 
+                            th:classappend="${hasUpvotedQuestion} ? 'btn-success' : 'btn-outline-secondary'"
+                            th:attr="data-id=${question.id}, data-type='question'"
+                            th:title="'Tăng vote (+1)'"
+                            sec:authorize="isAuthenticated()">
+                        <i class="bi bi-caret-up-fill"></i>
+                    </button>
+                    
+                    <!-- Vote count -->
+                    <div class="h4 mb-2 vote-count" th:text="${question.votes}">0</div>
+                    
+                    <!-- Downvote button: -1 vote (chỉ khi đã upvote) -->
+                    <button class="btn btn-sm downvote-btn" 
+                            th:classappend="${hasUpvotedQuestion} ? 'btn-outline-danger' : 'btn-outline-secondary'"
+                            th:attr="data-id=${question.id}, data-type='question'"
+                            th:title="'Giảm vote (-1, chỉ khi đã upvote)'"
+                            sec:authorize="isAuthenticated()">
+                        <i class="bi bi-caret-down-fill"></i>
+                    </button>
+                </div>
+                <div class="col-md-11">
+                    <h2 th:text="${question.title}">Question Title</h2>
+                    <div class="mb-3 text-muted small">
+                        Đăng lúc <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy HH:mm')}">date</span>
+                        | Đã xem <span th:text="${question.views}">0</span> lần
+                    </div>
+                    <div class="mb-3" th:utext="${question.body}">Question body</div>
+                    
+                    <!-- Image Gallery -->
+                    <div class="mb-3" th:if="${not #lists.isEmpty(question.images)}">
+                        <div class="image-gallery">
+                            <div class="row g-2">
+                                <div class="col-md-3 col-sm-4 col-6" th:each="image : ${question.images}">
+                                    <div class="image-container">
+                                        <img th:src="@{'/api/images/' + ${image.id}}"
+                                             class="img-fluid rounded cursor-pointer"
+                                             th:onclick="'showImage(\'' + ${image.id} + '\')'">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <span th:each="tag : ${question.tags}" class="badge bg-secondary me-1" th:text="${tag.name}">tag</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="btn-group" role="group">
+                                <!-- Edit/Delete buttons (only for author) -->
+                                <span th:if="${#authorization.expression('isAuthenticated()') && question.author.username == #authentication.name}">
+                                    <a th:href="@{/questions/{id}/edit(id=${question.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> Sửa
+                                    </a>
+                                    <form th:action="@{/questions/{id}/delete(id=${question.id})}" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Bạn có chắc muốn xóa câu hỏi này?')">
+                                            <i class="bi bi-trash"></i> Xóa
+                                        </button>
+                                    </form>
+                                </span>
+                                
+                                <!-- Report button (always visible) -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger report-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#reportQuestionModal"
+                                        th:attr="data-entity-id=${question.id}"
+                                        title="Báo cáo vi phạm">
+                                    <i class="bi bi-flag"></i> Báo Cáo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <small class="text-muted">hỏi lúc <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy HH:mm')}">date</span></small>
+                                <div class="d-flex align-items-center mt-2">
+                                    <div class="me-2">
+                                        <i class="bi bi-person-circle fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <a th:href="@{/users/{id}(id=${question.author.id})}" th:text="${question.author.username}">username</a>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-star-fill text-warning"></i> <span th:text="${question.author.reputation}">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Answers -->
+    <h3 class="mb-3"><span th:text="${answers.size()}">0</span> Câu Trả Lời</h3>
+    
+    <div th:each="answer : ${answers}" class="card mb-3">
+        <div class="card-body" th:classappend="${answer.isAccepted ? 'border-success border-3' : ''}">
+            <div class="row">
+                <div class="col-md-1 text-center vote-buttons">
+                    <!-- Upvote button: +1 vote -->
+                    <button class="btn btn-sm mb-2 upvote-btn" 
+                            th:classappend="${upvotedAnswerIds.contains(answer.id)} ? 'btn-success' : 'btn-outline-secondary'"
+                            th:attr="data-id=${answer.id}, data-type='answer'"
+                            th:title="'Tăng vote (+1)'"
+                            sec:authorize="isAuthenticated()">
+                        <i class="bi bi-caret-up-fill"></i>
+                    </button>
+                    
+                    <!-- Vote count -->
+                    <div class="h4 mb-2 vote-count" th:text="${answer.votes}">0</div>
+                    
+                    <!-- Downvote button: -1 vote (chỉ khi đã upvote) -->
+                    <button class="btn btn-sm mb-2 downvote-btn" 
+                            th:classappend="${upvotedAnswerIds.contains(answer.id)} ? 'btn-outline-danger' : 'btn-outline-secondary'"
+                            th:attr="data-id=${answer.id}, data-type='answer'"
+                            th:title="'Giảm vote (-1, chỉ khi đã upvote)'"
+                            sec:authorize="isAuthenticated()">
+                        <i class="bi bi-caret-down-fill"></i>
+                    </button>
+                    <div th:if="${answer.isAccepted}" class="text-success">
+                        <i class="bi bi-check-circle-fill fs-3"></i>
+                    </div>
+                    <form th:if="${!answer.isAccepted && #authorization.expression('isAuthenticated()') && question.author.username == #authentication.name}"
+                          th:action="@{/answers/{id}/accept(id=${answer.id})}" method="post">
+                        <button type="submit" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-check-circle"></i>
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-11">
+                    <div class="mb-3" th:utext="${answer.body}">Answer body</div>
+                    
+                    <!-- Image Gallery for Answer -->
+                    <div class="mb-3" th:if="${not #lists.isEmpty(answer.images)}">
+                        <div class="image-gallery">
+                            <div class="row g-2">
+                                <div class="col-md-3 col-sm-4 col-6" th:each="image : ${answer.images}">
+                                    <div class="image-container">
+                                        <img th:src="@{'/api/images/' + ${image.id}}"
+                                             class="img-fluid rounded cursor-pointer"
+                                             th:onclick="'showImage(\'' + ${image.id} + '\')'">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="btn-group" role="group">
+                                <!-- Edit/Delete buttons (only for author) -->
+                                <span th:if="${#authorization.expression('isAuthenticated()') && answer.author.username == #authentication.name}">
+                                    <a th:href="@{/answers/{id}/edit(id=${answer.id})}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i> Sửa
+                                    </a>
+                                    <form th:action="@{/answers/{id}/delete(id=${answer.id})}" method="post" style="display:inline;">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Bạn có chắc muốn xóa?')">
+                                            <i class="bi bi-trash"></i> Xóa
+                                        </button>
+                                    </form>
+                                </span>
+                                
+                                <!-- Report button (always visible) -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger report-btn"
+                                        data-bs-toggle="modal"
+                                        th:attr="data-bs-target='#reportAnswerModal' + ${answer.id}, data-entity-id=${answer.id}"
+                                        title="Báo cáo vi phạm">
+                                    <i class="bi bi-flag"></i> Báo Cáo
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card bg-light">
+                            <div class="card-body p-2">
+                                <small class="text-muted">trả lời lúc <span th:text="${#temporals.format(answer.createdAt, 'dd/MM/yyyy HH:mm')}">date</span></small>
+                                <div class="d-flex align-items-center mt-2">
+                                    <div class="me-2">
+                                        <i class="bi bi-person-circle fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <a th:href="@{/users/{id}(id=${answer.author.id})}" th:text="${answer.author.username}">username</a>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-star-fill text-warning"></i> <span th:text="${answer.author.reputation}">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Answer Form -->
+    <div class="card mt-4" sec:authorize="isAuthenticated()">
+        <div class="card-body">
+            <h4>Câu Trả Lời Của Bạn</h4>
+            <form th:action="@{/answers/question/{id}(id=${question.id})}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <textarea class="form-control" name="body" rows="10" required 
+                              placeholder="Viết câu trả lời của bạn tại đây..."></textarea>
+                </div>
+
+                <!-- Image Upload Section -->
+                <div class="mb-3">
+                    <label for="answerImages" class="form-label">Thêm Ảnh (tùy chọn)</label>
+                    <input type="file" class="form-control" id="answerImages" name="images" 
+                           multiple accept="image/*" onchange="previewImages(event, 'answerImagePreview')">
+                    <small class="form-text text-muted">
+                        Bạn có thể thêm nhiều ảnh (tối đa 5MB mỗi ảnh). Định dạng: JPG, PNG, GIF
+                    </small>
+                    <div id="answerImagePreview" class="image-preview-container"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Đăng Câu Trả Lời
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert alert-info mt-4" sec:authorize="!isAuthenticated()">
+        <i class="bi bi-info-circle"></i> 
+        Vui lòng <a th:href="@{/login}">đăng nhập</a> để trả lời câu hỏi.
+    </div>
+
+    <!-- ==================== REPORT MODALS ==================== -->
+    
+    <!-- Report Question Modal -->
+    <div class="modal fade" id="reportQuestionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/reports/create}" method="post">
+                    <input type="hidden" name="entityType" value="QUESTION">
+                    <input type="hidden" name="entityId" th:value="${question.id}">
+                    
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-flag-fill"></i> Báo Cáo Câu Hỏi
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-3">
+                            <small><i class="bi bi-info-circle"></i> Báo cáo của bạn sẽ được kiểm duyệt trong 24-48 giờ.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lý Do <span class="text-danger">*</span></label>
+                            <select name="reason" class="form-select" required>
+                                <option value="">-- Chọn lý do --</option>
+                                <option value="SPAM">🚫 Spam / Quảng cáo</option>
+                                <option value="OFFENSIVE">😡 Ngôn từ xúc phạm</option>
+                                <option value="INAPPROPRIATE">⚠️ Nội dung không phù hợp</option>
+                                <option value="DUPLICATE">📋 Nội dung trùng lặp</option>
+                                <option value="MISINFORMATION">❌ Thông tin sai lệch</option>
+                                <option value="OTHER">💬 Lý do khác</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mô Tả Chi Tiết (Tùy chọn)</label>
+                            <textarea name="description" class="form-control" rows="3" 
+                                      placeholder="Mô tả thêm về vấn đề (không bắt buộc)..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-send"></i> Gửi Báo Cáo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Answer Modals (one for each answer) -->
+    <div th:each="answer : ${answers}" class="modal fade" th:id="'reportAnswerModal' + ${answer.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/reports/create}" method="post">
+                    <input type="hidden" name="entityType" value="ANSWER">
+                    <input type="hidden" name="entityId" th:value="${answer.id}">
+                    
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-flag-fill"></i> Báo Cáo Câu Trả Lời
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-3">
+                            <small><i class="bi bi-info-circle"></i> Báo cáo của bạn sẽ được kiểm duyệt trong 24-48 giờ.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lý Do <span class="text-danger">*</span></label>
+                            <select name="reason" class="form-select" required>
+                                <option value="">-- Chọn lý do --</option>
+                                <option value="SPAM">🚫 Spam / Quảng cáo</option>
+                                <option value="OFFENSIVE">😡 Ngôn từ xúc phạm</option>
+                                <option value="INAPPROPRIATE">⚠️ Nội dung không phù hợp</option>
+                                <option value="DUPLICATE">📋 Nội dung trùng lặp</option>
+                                <option value="MISINFORMATION">❌ Thông tin sai lệch</option>
+                                <option value="OTHER">💬 Lý do khác</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mô Tả Chi Tiết (Tùy chọn)</label>
+                            <textarea name="description" class="form-control" rows="3" 
+                                      placeholder="Mô tả thêm về vấn đề (không bắt buộc)..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-send"></i> Gửi Báo Cáo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated (from Thymeleaf)
+            const isAuthenticated = /*[[${#authorization.expression('isAuthenticated()')}]]*/ false;
+            
+            // ================== VOTE FUNCTIONALITY ==================
+            // UPVOTE: +1 vote (chỉ khi chưa vote)
+            // DOWNVOTE: -1 vote (chỉ khi đã upvote)
+            
+            // Handle UPVOTE buttons
+            document.querySelectorAll('.upvote-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (!isAuthenticated) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+                    
+                    const entityId = this.getAttribute('data-id');
+                    const entityType = this.getAttribute('data-type');
+                    const container = this.closest('.vote-buttons');
+                    const voteDisplay = container.querySelector('.vote-count');
+                    const upvoteBtn = this;
+                    const downvoteBtn = container.querySelector('.downvote-btn');
+                    
+                    // Disable buttons
+                    upvoteBtn.disabled = true;
+                    downvoteBtn.disabled = true;
+                    
+                    // Check if already upvoted (prevent double upvote)
+                    if (upvoteBtn.classList.contains('btn-success')) {
+                        showToast('Bạn đã upvote rồi!', 'info');
+                        upvoteBtn.disabled = false;
+                        downvoteBtn.disabled = false;
+                        return;
+                    }
+                    
+                    // Send AJAX request
+                    const baseUrl = entityType === 'question' ? '/questions' : '/answers';
+                    fetch(`${baseUrl}/${entityId}/upvote`, {
+                        method: 'POST',
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.message || 'Upvote failed');
+                            });
+                        }
+                        return response.text();
+                    })
+                    .then(newVoteCount => {
+                        // Update vote count
+                        voteDisplay.textContent = newVoteCount;
+                        voteDisplay.classList.add('text-success');
+                        setTimeout(() => voteDisplay.classList.remove('text-success'), 300);
+                        
+                        // Update button states
+                        upvoteBtn.classList.remove('btn-outline-secondary');
+                        upvoteBtn.classList.add('btn-success');
+                        downvoteBtn.classList.remove('btn-outline-secondary');
+                        downvoteBtn.classList.add('btn-outline-danger');
+                        
+                        showToast('Đã vote +1!', 'success');
+                    })
+                    .catch(error => {
+                        console.error('Upvote error:', error);
+                        showToast(error.message || 'Không thể upvote.', 'error');
+                    })
+                    .finally(() => {
+                        upvoteBtn.disabled = false;
+                        downvoteBtn.disabled = false;
+                    });
+                });
+            });
+            
+            // Handle DOWNVOTE buttons
+            document.querySelectorAll('.downvote-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (!isAuthenticated) {
+                        window.location.href = '/auth/login';
+                        return;
+                    }
+                    
+                    const entityId = this.getAttribute('data-id');
+                    const entityType = this.getAttribute('data-type');
+                    const container = this.closest('.vote-buttons');
+                    const voteDisplay = container.querySelector('.vote-count');
+                    const upvoteBtn = container.querySelector('.upvote-btn');
+                    const downvoteBtn = this;
+                    
+                    // Check if upvoted (downvote chỉ hoạt động khi đã upvote)
+                    if (!upvoteBtn.classList.contains('btn-success')) {
+                        showToast('Bạn phải upvote trước khi downvote!', 'info');
+                        return;
+                    }
+                    
+                    // Disable buttons
+                    upvoteBtn.disabled = true;
+                    downvoteBtn.disabled = true;
+                    
+                    // Send AJAX request
+                    const baseUrl = entityType === 'question' ? '/questions' : '/answers';
+                    fetch(`${baseUrl}/${entityId}/downvote`, {
+                        method: 'POST',
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            // Handle error response
+                            return response.json().then(err => {
+                                throw new Error(err.message || 'Downvote failed');
+                            });
+                        }
+                        return response.text();
+                    })
+                    .then(newVoteCount => {
+                        // Update vote count
+                        voteDisplay.textContent = newVoteCount;
+                        voteDisplay.classList.add('text-danger');
+                        setTimeout(() => voteDisplay.classList.remove('text-danger'), 300);
+                        
+                        // Reset button states
+                        upvoteBtn.classList.remove('btn-success');
+                        upvoteBtn.classList.add('btn-outline-secondary');
+                        downvoteBtn.classList.remove('btn-outline-danger');
+                        downvoteBtn.classList.add('btn-outline-secondary');
+                        
+                        showToast('Đã hủy vote (-1)', 'info');
+                    })
+                    .catch(error => {
+                        console.error('Downvote error:', error);
+                        showToast(error.message || 'Bạn phải upvote trước!', 'info');
+                    })
+                    .finally(() => {
+                        upvoteBtn.disabled = false;
+                        downvoteBtn.disabled = false;
+                    });
+                });
+            });
+            
+            // ================== REPORT FUNCTIONALITY ==================
+            // Handle Report button clicks
+            document.querySelectorAll('.report-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // If not authenticated, redirect to login
+                    if (!isAuthenticated) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = '/auth/login';
+                        return false;
+                    }
+                    // Otherwise, let Bootstrap modal open normally
+                });
+            });
+            
+            // ================== HELPER FUNCTIONS ==================
+            // Simple toast notification function
+            function showToast(message, type = 'info') {
+                // Determine alert class and icon based on type
+                let alertClass, iconClass;
+                
+                switch(type) {
+                    case 'success':
+                        alertClass = 'alert-success';
+                        iconClass = 'bi-check-circle';
+                        break;
+                    case 'error':
+                    case 'danger':
+                        alertClass = 'alert-danger';
+                        iconClass = 'bi-exclamation-triangle';
+                        break;
+                    case 'info':
+                    default:
+                        alertClass = 'alert-info';
+                        iconClass = 'bi-info-circle';
+                        break;
+                }
+                
+                // Create toast element
+                const toast = document.createElement('div');
+                toast.className = `alert ${alertClass} position-fixed top-0 end-0 m-3`;
+                toast.style.zIndex = '9999';
+                toast.style.minWidth = '250px';
+                toast.innerHTML = `
+                    <i class="bi ${iconClass}"></i>
+                    ${message}
+                `;
+                
+                document.body.appendChild(toast);
+                
+                // Auto-remove after 2 seconds
+                setTimeout(() => {
+                    toast.remove();
+                }, 2000);
+            }
+        });
+    </script>
+</div>
+</body>
+</html>

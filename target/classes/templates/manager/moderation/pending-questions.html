@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Pending Questions - Manager</title>
+</head>
+<body>
+    <div layout:fragment="content">
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2"><i class="bi bi-hourglass-split"></i> Câu Hỏi Chờ Duyệt</h1>
+                <a th:href="@{/manager/moderation}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay Lại Dashboard
+                </a>
+            </div>
+
+            <!-- Alert Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="alert alert-success" th:if="${questions.empty}">
+                        <i class="bi bi-check-circle"></i> Tuyệt vời! Không có câu hỏi nào chờ duyệt.
+                    </div>
+
+                    <div class="list-group" th:if="${not questions.empty}">
+                        <div class="list-group-item" th:each="q : ${questions.content}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-2" th:text="${q.title}">Question Title</h5>
+                                    <div class="text-muted mb-2" th:utext="${#strings.abbreviate(q.body, 200)}">Body preview...</div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> <strong th:text="${q.author.username}">author</strong> | 
+                                        <i class="bi bi-clock"></i> <span th:text="${#temporals.format(q.createdAt, 'dd/MM/yyyy HH:mm')}">date</span>
+                                    </small>
+                                </div>
+                                <div class="ms-3 d-flex flex-column gap-2">
+                                    <form th:action="@{/manager/moderation/questions/{id}/approve(id=${q.id})}" method="post">
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="bi bi-check-lg"></i> Duyệt
+                                        </button>
+                                    </form>
+                                    <form th:action="@{/manager/moderation/questions/{id}/reject(id=${q.id})}" method="post">
+                                        <button type="submit" class="btn btn-danger w-100" 
+                                                onclick="return confirm('Bạn chắc chắn muốn từ chối câu hỏi này?')">
+                                            <i class="bi bi-x-lg"></i> Từ Chối
+                                        </button>
+                                    </form>
+                                    <a th:href="@{/questions/{id}(id=${q.id})}" target="_blank" class="btn btn-outline-secondary">
+                                        <i class="bi bi-eye"></i> Xem Chi Tiết
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav th:if="${questions.totalPages > 1}" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item" th:classappend="${questions.first} ? 'disabled'">
+                                <a class="page-link" th:href="@{/manager/moderation/questions/pending(page=${currentPage - 1})}">
+                                    <i class="bi bi-chevron-left"></i> Trước
+                                </a>
+                            </li>
+                            
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, questions.totalPages - 1)}"
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/manager/moderation/questions/pending(page=${i})}" th:text="${i + 1}">1</a>
+                            </li>
+                            
+                            <li class="page-item" th:classappend="${questions.last} ? 'disabled'">
+                                <a class="page-link" th:href="@{/manager/moderation/questions/pending(page=${currentPage + 1})}">
+                                    Sau <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,738 @@
+@charset "UTF-8";
+
+/* ==========================================================================
+   EDUMOET - Custom Styles
+   ========================================================================== */
+
+:root {
+    --primary-color: #0a95ff;
+    --secondary-color: #f48024;
+    --success-color: #5eba7d;
+    --danger-color: #d1383d;
+    --warning-color: #ffc107;
+    --dark-color: #232629;
+    --light-bg: #f8f9fa;
+    --border-color: #d6d9dc;
+    --hover-bg: #f8f9fa;
+}
+
+/* ==========================================================================
+   Global Styles
+   ========================================================================== */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Liberation Sans", sans-serif;
+    color: #3c4146;
+    background-color: #f8f9f9;
+}
+
+.container-fluid {
+    max-width: 1440px;
+}
+
+/* ==========================================================================
+   Navbar Improvements
+   ========================================================================== */
+.navbar-dark {
+    background-color: var(--dark-color) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.navbar-brand {
+    font-size: 1.2rem;
+}
+
+.navbar .form-control {
+    border-radius: 20px;
+    width: 300px;
+}
+
+.navbar .btn-outline-light {
+    border-radius: 20px;
+}
+
+/* Notification & Message Dropdowns */
+.notification-dropdown {
+    min-width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-dropdown .dropdown-item {
+    white-space: normal;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+}
+
+.notification-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+.list-group-item {
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.list-group-item:hover {
+    border-left-color: var(--primary-color);
+    background-color: var(--hover-bg);
+}
+
+.list-group-item.active {
+    border-left-color: var(--primary-color);
+    background-color: #fff;
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Cards & Panels
+   ========================================================================== */
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    transition: box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Questions List
+   ========================================================================== */
+.question-item {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+}
+
+.question-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.question-item:last-child {
+    border-bottom: none;
+}
+
+.question-stats {
+    display: flex;
+    gap: 15px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.question-stats .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.question-stats .stat-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #3c4146;
+}
+
+.question-stats .stat.has-answers {
+    color: var(--success-color);
+}
+
+.question-stats .stat.has-answers .stat-value {
+    color: var(--success-color);
+}
+
+.question-stats .stat.answered {
+    background-color: var(--success-color);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.question-stats .stat.answered .stat-value {
+    color: #fff;
+}
+
+.question-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.question-title:hover {
+    color: #0074cc;
+}
+
+.question-excerpt {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.question-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.question-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tag-badge {
+    background-color: #e1ecf4;
+    color: #39739d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.tag-badge:hover {
+    background-color: #d0e3f1;
+    color: #2c5877;
+}
+
+.question-author {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.question-author a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.question-author .user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    margin-right: 4px;
+}
+
+/* ==========================================================================
+   Vote Buttons
+   ========================================================================== */
+.vote-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.vote-btn {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: #babfc4;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vote-btn:hover {
+    color: var(--secondary-color);
+}
+
+.vote-btn.voted {
+    color: var(--secondary-color);
+}
+
+.vote-count {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #3c4146;
+}
+
+/* ==========================================================================
+   Buttons & Actions
+   ========================================================================== */
+.btn-ask {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-ask:hover {
+    background-color: #0074cc;
+    color: #fff;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+/* ==========================================================================
+   Badges & Labels
+   ========================================================================== */
+.badge-gold {
+    background-color: #ffcc01;
+    color: #3c4146;
+}
+
+.badge-silver {
+    background-color: #b4b8bc;
+    color: #3c4146;
+}
+
+.badge-bronze {
+    background-color: #d1a684;
+    color: #3c4146;
+}
+
+.user-reputation {
+    font-weight: 600;
+    color: #3c4146;
+}
+
+.user-badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+}
+
+.user-badge i {
+    font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   Filters & Tabs
+   ========================================================================== */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filter-tab {
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.filter-tab:hover {
+    color: #3c4146;
+    border-bottom-color: #babfc4;
+}
+
+.filter-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
+.pagination {
+    margin-top: 30px;
+}
+
+.page-link {
+    color: var(--primary-color);
+    border-color: var(--border-color);
+}
+
+.page-link:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-color);
+    color: #0074cc;
+}
+
+.page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Forms & Inputs
+   ========================================================================== */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(10, 149, 255, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #3c4146;
+}
+
+.markdown-editor {
+    min-height: 200px;
+    font-family: 'Courier New', monospace;
+}
+
+/* ==========================================================================
+   Comments
+   ========================================================================== */
+.comment-item {
+    padding: 12px;
+    border-left: 2px solid #f8f9fa;
+    margin-bottom: 8px;
+}
+
+.comment-item:hover {
+    background-color: #f8f9fa;
+    border-left-color: var(--border-color);
+}
+
+.comment-text {
+    color: #3c4146;
+    margin-bottom: 4px;
+}
+
+.comment-meta {
+    font-size: 0.8rem;
+    color: #9fa6ad;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.comment-action {
+    background: none;
+    border: none;
+    color: #9fa6ad;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.comment-action:hover {
+    color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Alert Messages
+   ========================================================================== */
+.alert {
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+}
+
+.alert-info {
+    border-left-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Admin Panel
+   ========================================================================== */
+.admin-sidebar {
+    background-color: #fff;
+    border-right: 1px solid var(--border-color);
+    min-height: calc(100vh - 120px);
+}
+
+.admin-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+}
+
+.admin-card.card-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.admin-card.card-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.admin-card.card-danger {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+}
+
+.admin-card.card-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-card {
+    text-align: center;
+    padding: 20px;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* ==========================================================================
+   Loading & Spinners
+   ========================================================================== */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+    .navbar .form-control {
+        width: 200px;
+    }
+    
+    .question-stats {
+        font-size: 0.8rem;
+    }
+    
+    .question-stats .stat {
+        min-width: 40px;
+    }
+    
+    .question-title {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .question-item {
+        padding: 15px 10px;
+    }
+    
+    .question-stats {
+        gap: 8px;
+    }
+    
+    .question-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+.text-muted-custom {
+    color: #9fa6ad !important;
+}
+
+.bg-light-custom {
+    background-color: #f8f9f9 !important;
+}
+
+.border-custom {
+    border-color: var(--border-color) !important;
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.15) !important;
+}
+
+/* Pinned & Locked indicators */
+.question-pinned {
+    border-left: 3px solid var(--warning-color);
+}
+
+.question-locked {
+    opacity: 0.7;
+}
+
+.badge-pinned {
+    background-color: var(--warning-color);
+    color: #000;
+}
+
+.badge-locked {
+    background-color: #6c757d;
+}
+
+/* Code highlighting */
+pre {
+    background-color: #f6f6f7;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    overflow-x: auto;
+}
+
+code {
+    background-color: #f6f6f7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ==========================================================================
+   Admin Dashboard Styles
+   ========================================================================== */
+.admin-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.admin-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+}
+
+.admin-card.card-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.admin-card.card-success {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.admin-card.card-warning {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.admin-card.card-danger {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.stat-card {
+    min-width: 100px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: scale(1.05);
+}
+
+.stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.stat-card .stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   User Profile Styles
+   ========================================================================== */
+.user-reputation {
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.badge-gold {
+    color: #ffcc01 !important;
+}
+
+.badge-silver {
+    color: #b4b8bc !important;
+}
+
+.badge-bronze {
+    color: #d1a684 !important;
+}
+
+.online-status::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #44b700;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+/* ==========================================================================
+   Responsive Additions
+   ========================================================================== */
+@media (max-width: 768px) {
+    .stat-card {
+        min-width: 80px;
+    }
+    
+    .message-bubble {
+        max-width: 85%;
+    }
+}
