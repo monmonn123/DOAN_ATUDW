@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<div th:fragment="sidebar" class="position-sticky pt-3">
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/dashboard}" th:classappend="${#httpServletRequest != null and #strings.contains(#httpServletRequest.requestURI, '/admin/dashboard')} ? 'active' : ''">
+                <i class="bi bi-speedometer2"></i> Trang Chủ
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/all-features}" th:classappend="${#httpServletRequest != null and #strings.contains(#httpServletRequest.requestURI, '/admin/all-features')} ? 'active' : ''">
+                <i class="bi bi-grid-3x3-gap"></i> Tất Cả Tính Năng
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/users}" th:classappend="${#httpServletRequest != null and #strings.contains(#httpServletRequest.requestURI, '/admin/users')} ? 'active' : ''">
+                <i class="bi bi-people"></i> Quản Lý Người Dùng
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/questions}">
+                <i class="bi bi-file-text"></i> Câu Hỏi
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/comments}">
+                <i class="bi bi-chat-dots"></i> Bình Luận
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/reports}">
+                <i class="bi bi-flag"></i> Báo Cáo Vi Phạm
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/notifications/send}">
+                <i class="bi bi-bell"></i> Gửi Thông Báo
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/moderation}">
+                <i class="bi bi-shield-check"></i> Kiểm Duyệt
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/activity-logs}">
+                <i class="bi bi-list-ul"></i> Nhật Ký Hoạt Động
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/admin/statistics}">
+                <i class="bi bi-graph-up"></i> Thống Kê
+            </a>
+        </li>
+    </ul>
+
+    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+        <span>Về Trang Web</span>
+    </h6>
+    <ul class="nav flex-column mb-2">
+        <li class="nav-item">
+            <a class="nav-link" th:href="@{/}">
+                <i class="bi bi-house-door"></i> Trang Chủ
+            </a>
+        </li>
+    </ul>
+</div>
+</body>
+</html>
+

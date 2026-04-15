@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Báo Cáo Vi Phạm</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-flag-fill"></i> Báo Cáo Vi Phạm
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Lưu ý:</strong> Vui lòng cung cấp đầy đủ thông tin để chúng tôi xử lý báo cáo nhanh chóng.
+                        </div>
+
+                        <form th:action="@{/reports/create}" method="post">
+                            <input type="hidden" name="entityType" th:value="${entityType}">
+                            <input type="hidden" name="entityId" th:value="${entityId}">
+
+                            <!-- Report Type Info -->
+                            <div class="mb-3">
+                                <label class="form-label">Loại Nội Dung</label>
+                                <input type="text" class="form-control" 
+                                       th:value="${entityType == 'QUESTION' ? 'Câu Hỏi' : (entityType == 'ANSWER' ? 'Câu Trả Lời' : entityType)}" 
+                                       disabled>
+                            </div>
+
+                            <!-- Reason -->
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Lý Do <span class="text-danger">*</span></label>
+                                <select id="reason" name="reason" class="form-select" required>
+                                    <option value="">-- Chọn lý do --</option>
+                                    <option value="SPAM">Spam / Quảng cáo</option>
+                                    <option value="OFFENSIVE">Ngôn từ xúc phạm</option>
+                                    <option value="INAPPROPRIATE">Nội dung không phù hợp</option>
+                                    <option value="DUPLICATE">Nội dung trùng lặp</option>
+                                    <option value="MISINFORMATION">Thông tin sai lệch</option>
+                                    <option value="OTHER">Lý do khác</option>
+                                </select>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Mô Tả Chi Tiết <span class="text-danger">*</span></label>
+                                <textarea id="description" name="description" class="form-control" rows="5" 
+                                          placeholder="Vui lòng mô tả cụ thể vấn đề..." required></textarea>
+                                <small class="text-muted">Tối thiểu 20 ký tự</small>
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                    <i class="bi bi-arrow-left"></i> Quay Lại
+                                </button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-send"></i> Gửi Báo Cáo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Help Text -->
+                <div class="mt-3 text-muted text-center">
+                    <small>
+                        <i class="bi bi-shield-check"></i>
+                        Báo cáo của bạn sẽ được xem xét bởi đội ngũ kiểm duyệt trong vòng 24-48 giờ.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style layout:fragment="styles">
+    .card {
+        border-radius: 10px;
+    }
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+    textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+</style>
+
+<!-- Custom Scripts -->
+<script layout:fragment="scripts">
+    // Validate description length
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const description = document.getElementById('description').value;
+        if (description.length < 20) {
+            e.preventDefault();
+            alert('Mô tả phải có ít nhất 20 ký tự!');
+            return false;
+        }
+    });
+</script>
+</body>
+</html>

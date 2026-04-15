@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Quản Lý Báo Cáo - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="bi bi-flag"></i> Quản Lý Báo Cáo Vi Phạm</h1>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Tổng Báo Cáo</h5>
+                    <h2 class="mb-0" th:text="${totalReports}">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Chờ Xử Lý</h5>
+                    <h2 class="mb-0" th:text="${pendingReports}">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Đã Xử Lý</h5>
+                    <h2 class="mb-0" th:text="${resolvedReports}">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-funnel"></i> Lọc
+        </div>
+        <div class="card-body">
+            <form th:action="@{/admin/reports}" method="get" class="row g-3">
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="PENDING" th:selected="${status == 'PENDING'}">Chờ Xử Lý</option>
+                        <option value="RESOLVED" th:selected="${status == 'RESOLVED'}">Đã Xử Lý</option>
+                        <option value="REJECTED" th:selected="${status == 'REJECTED'}">Đã Từ Chối</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h6 class="m-0"><i class="bi bi-list"></i> Danh Sách Báo Cáo</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Loại</th>
+                            <th>ID Nội Dung</th>
+                            <th>Người Báo Cáo</th>
+                            <th>Lý Do</th>
+                            <th>Trạng Thái</th>
+                            <th>Ngày Tạo</th>
+                            <th>Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="report : ${reports}">
+                            <td th:text="${report.id}">1</td>
+                            <td>
+                                <span class="badge bg-info" th:text="${report.entityType}">QUESTION</span>
+                            </td>
+                            <td>
+                                <a th:if="${report.entityType == 'QUESTION'}" 
+                                   th:href="@{/questions/{id}(id=${report.entityId})}" 
+                                   target="_blank"
+                                   th:text="${report.entityId}">1</a>
+                                <span th:unless="${report.entityType == 'QUESTION'}" th:text="${report.entityId}">1</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/users/{id}(id=${report.reporter.id})}" 
+                                   th:text="${report.reporter.username}">user123</a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${report.reason}">SPAM</span>
+                                <br>
+                                <small class="text-muted" th:text="${#strings.abbreviate(report.description, 50)}">Description...</small>
+                            </td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${report.status == 'PENDING' ? 'bg-warning' : (report.status == 'RESOLVED' ? 'bg-success' : 'bg-danger')}"
+                                      th:text="${report.status}">PENDING</span>
+                            </td>
+                            <td th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Resolve (chỉ hiện khi PENDING) -->
+                                    <button th:if="${report.status == 'PENDING'}"
+                                            type="button" 
+                                            class="btn btn-success" 
+                                            data-bs-toggle="modal" 
+                                            th:data-bs-target="'#resolveModal' + ${report.id}"
+                                            title="Xử Lý">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                    
+                                    <!-- Reject (chỉ hiện khi PENDING) -->
+                                    <button th:if="${report.status == 'PENDING'}"
+                                            type="button" 
+                                            class="btn btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            th:data-bs-target="'#rejectModal' + ${report.id}"
+                                            title="Từ Chối">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+
+                                    <!-- View Details -->
+                                    <button type="button" 
+                                            class="btn btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            th:data-bs-target="'#detailModal' + ${report.id}"
+                                            title="Chi Tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Resolve Modal -->
+                                <div class="modal fade" th:id="'resolveModal' + ${report.id}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form th:action="@{/admin/reports/{id}/resolve(id=${report.id})}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Xử Lý Báo Cáo #<span th:text="${report.id}">1</span></h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Ghi Chú</label>
+                                                        <textarea name="resolution" class="form-control" rows="3" required
+                                                                  placeholder="Nhập lý do xử lý..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                    <button type="submit" class="btn btn-success">Xác Nhận Xử Lý</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Reject Modal -->
+                                <div class="modal fade" th:id="'rejectModal' + ${report.id}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form th:action="@{/admin/reports/{id}/reject(id=${report.id})}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Từ Chối Báo Cáo #<span th:text="${report.id}">1</span></h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Lý Do Từ Chối</label>
+                                                        <textarea name="reason" class="form-control" rows="3" required
+                                                                  placeholder="Nhập lý do từ chối..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                    <button type="submit" class="btn btn-danger">Xác Nhận Từ Chối</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Detail Modal -->
+                                <div class="modal fade" th:id="'detailModal' + ${report.id}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Chi Tiết Báo Cáo #<span th:text="${report.id}">1</span></h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <table class="table">
+                                                    <tr>
+                                                        <th width="30%">Người Báo Cáo:</th>
+                                                        <td th:text="${report.reporter.username}">user123</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Loại Nội Dung:</th>
+                                                        <td th:text="${report.entityType}">QUESTION</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>ID Nội Dung:</th>
+                                                        <td th:text="${report.entityId}">1</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Lý Do:</th>
+                                                        <td><span class="badge bg-secondary" th:text="${report.reason}">SPAM</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Mô Tả:</th>
+                                                        <td th:text="${report.description}">Description...</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Trạng Thái:</th>
+                                                        <td><span class="badge bg-warning" th:text="${report.status}">PENDING</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Ngày Tạo:</th>
+                                                        <td th:text="${#temporals.format(report.createdAt, 'dd/MM/yyyy HH:mm:ss')}">01/01/2024</td>
+                                                    </tr>
+                                                    <tr th:if="${report.resolvedBy != null}">
+                                                        <th>Người Xử Lý:</th>
+                                                        <td th:text="${report.resolvedBy.username}">admin</td>
+                                                    </tr>
+                                                    <tr th:if="${report.resolution != null}">
+                                                        <th>Ghi Chú:</th>
+                                                        <td th:text="${report.resolution}">Resolution note</td>
+                                                    </tr>
+                                                    <tr th:if="${report.resolvedAt != null}">
+                                                        <th>Ngày Xử Lý:</th>
+                                                        <td th:text="${#temporals.format(report.resolvedAt, 'dd/MM/yyyy HH:mm:ss')}">01/01/2024</td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(reports)}">
+                            <td colspan="8" class="text-center">Không có báo cáo nào</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav th:if="${totalPages > 1}">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/reports(page=${currentPage - 1}, status=${status})}">Trước</a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/admin/reports(page=${i}, status=${status})}" th:text="${i + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/reports(page=${currentPage + 1}, status=${status})}">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

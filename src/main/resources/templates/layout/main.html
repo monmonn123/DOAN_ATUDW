@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$CONTENT_TITLE - $LAYOUT_TITLE">EDUMOET</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" th:href="@{/icon.ico}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Image handling CSS -->
+    <link rel="stylesheet" th:href="@{/css/images.css}">
+    <!-- Chatbot CSS -->
+    <link rel="stylesheet" th:href="@{/css/chatbot.css}">
+    
+    <!-- Page specific head content -->
+    <th:block layout:fragment="extra-head"></th:block>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" th:href="@{/}">
+                <i class="bi bi-mortarboard-fill"></i> EDUMOET
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/}">Câu Hỏi</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/tags}">Thẻ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/users}">Người Dùng</a>
+                    </li>
+                </ul>
+                
+                <!-- Search Form -->
+                <form class="d-flex me-3" th:action="@{/search}" method="get">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Tìm kiếm..." aria-label="Search">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
+                
+                       <!-- User Menu -->
+                       <ul class="navbar-nav">
+                           <!-- Not Authenticated -->
+                           <li class="nav-item" sec:authorize="!isAuthenticated()">
+                               <a class="nav-link" th:href="@{/login}">
+                                   <i class="bi bi-box-arrow-in-right"></i> Đăng Nhập
+                               </a>
+                           </li>
+                           <li class="nav-item" sec:authorize="!isAuthenticated()">
+                               <a class="btn btn-primary btn-sm ms-2" th:href="@{/register}">
+                                   Đăng Ký
+                               </a>
+                           </li>
+                           
+                           <!-- Authenticated -->
+                           <!-- Notifications -->
+                           <li class="nav-item" sec:authorize="isAuthenticated()">
+                            <a class="nav-link position-relative"
+                               th:href="@{/notifications}"
+                               title="Thông Báo">
+                                <i class="bi bi-bell fs-5"></i>
+                        
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                      th:if="${unreadNotifications > 0}"
+                                      th:text="${unreadNotifications}">
+                                    5
+                                </span>
+                            </a>
+                        </li>                        
+                           <!-- Messages -->
+                           <li class="nav-item" sec:authorize="isAuthenticated()">
+                            <a class="nav-link position-relative" 
+                               th:href="@{/messages/inbox}" 
+                               title="Tin Nhắn">
+                                <i class="bi bi-envelope fs-5"></i>
+                        
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                      th:if="${unreadMessages > 0}"
+                                      th:text="${unreadMessages}">
+                                    3
+                                </span>
+                            </a>
+                        </li>
+                        
+                           
+                           <!-- User Dropdown -->
+                           <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                   <i class="bi bi-person-circle fs-5"></i>
+                                   <span sec:authentication="name">Username</span>
+                                   <span class="badge bg-success ms-1" th:if="${userPoints}" th:text="${userPoints}">0</span>
+                               </a>
+                               <ul class="dropdown-menu dropdown-menu-end">
+                                   <!-- ADMIN Menu -->
+                                   <li sec:authorize="hasRole('ADMIN')">
+                                       <a class="dropdown-item bg-danger text-white" th:href="@{/admin/dashboard}">
+                                           <i class="bi bi-shield-lock"></i> <strong>Bảng Quản Trị</strong>
+                                       </a>
+                                   </li>
+                                   <li sec:authorize="hasRole('ADMIN')"><hr class="dropdown-divider"></li>
+                                   
+                               <!-- MANAGER Menu -->
+                               <li sec:authorize="hasRole('MANAGER')">
+                                   <a class="dropdown-item bg-warning" th:href="@{/manager}">
+                                       <i class="bi bi-kanban"></i> <strong>Bảng Quản Lý</strong>
+                                   </a>
+                               </li>
+                               <li sec:authorize="hasRole('MANAGER')"><hr class="dropdown-divider"></li>
+                                   
+                                   <!-- Common Menu for all roles -->
+                                   <li><a class="dropdown-item" th:href="@{/profile}">
+                                       <i class="bi bi-person"></i> Hồ Sơ
+                                   </a></li>
+                                   <li><a class="dropdown-item" th:href="@{/profile/my-questions}">
+                                       <i class="bi bi-file-earmark-text"></i> Câu Hỏi Của Tôi
+                                   </a></li>
+                                   <li><a class="dropdown-item" th:href="@{/messages/inbox}">
+                                       <i class="bi bi-envelope"></i> Tin Nhắn
+                                   </a></li>
+                                   
+                                   <li><hr class="dropdown-divider"></li>
+                                   
+                                   <li>
+                                       <form th:action="@{/logout}" method="post" class="px-3">
+                                           <button type="submit" class="dropdown-item text-danger">
+                                               <i class="bi bi-box-arrow-right"></i> Đăng Xuất
+                                           </button>
+                                       </form>
+                                   </li>
+                               </ul>
+                           </li>
+                       </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid mt-4">
+        <div class="row">
+                   <!-- Sidebar -->
+                   <div class="col-md-2 d-none d-md-block">
+                       <div class="list-group">
+                           <!-- Common Links -->
+                           <a th:href="@{/}" class="list-group-item list-group-item-action">
+                               <i class="bi bi-house-door"></i> Trang Chủ
+                           </a>
+                           <a th:href="@{/questions/ask}" class="list-group-item list-group-item-action" sec:authorize="isAuthenticated()">
+                               <i class="bi bi-plus-circle"></i> Đặt Câu Hỏi
+                           </a>
+                           <a th:href="@{/profile/my-questions}" class="list-group-item list-group-item-action" sec:authorize="isAuthenticated()">
+                               <i class="bi bi-file-earmark-text"></i> Câu Hỏi Của Tôi
+                           </a>
+                           <a th:href="@{/tags}" class="list-group-item list-group-item-action">
+                               <i class="bi bi-tags"></i> Thẻ
+                           </a>
+                           <a th:href="@{/users}" class="list-group-item list-group-item-action">
+                               <i class="bi bi-people"></i> Người Dùng
+                           </a>
+                           
+                          <!-- ADMIN Only Links -->
+                          <div sec:authorize="hasRole('ADMIN')" class="mt-3">
+                              <div class="list-group-item bg-danger text-white">
+                                  <strong><i class="bi bi-shield-lock"></i> BẢNG QUẢN TRỊ</strong>
+                              </div>
+                              <a th:href="@{/admin/dashboard}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-speedometer2"></i> Trang Chủ
+                              </a>
+                              <a th:href="@{/admin/all-features}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-grid-3x3-gap"></i> Tất Cả Tính Năng
+                              </a>
+                              
+                              <!-- Quản lý -->
+                              <div class="list-group-item bg-light">
+                                  <small><strong>QUẢN LÝ</strong></small>
+                              </div>
+            <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Người Dùng
+            </a>
+            <a th:href="@{/admin/questions}" class="list-group-item list-group-item-action">
+                <i class="bi bi-file-text"></i> Câu Hỏi
+            </a>
+                              <a th:href="@{/admin/answers}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-chat-right-text"></i> Câu Trả Lời
+                              </a>
+                              <a th:href="@{/admin/tags}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-tags"></i> Thẻ
+                              </a>
+                              
+                              <!-- Hệ thống -->
+                              <div class="list-group-item bg-light">
+                                  <small><strong>HỆ THỐNG</strong></small>
+                              </div>
+                              <a th:href="@{/admin/notifications}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-bell"></i> Thông Báo
+                              </a>
+                              <a th:href="@{/admin/notifications/send}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-send"></i> Gửi Thông Báo
+                              </a>
+                              <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-shield-check"></i> Kiểm Duyệt
+                              </a>
+                              <a th:href="@{/admin/reports}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-flag"></i> Báo Cáo
+                              </a>
+                              <a th:href="@{/admin/activity-logs}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-list-ul"></i> Nhật Ký Hoạt Động
+                              </a>
+                              <a th:href="@{/admin/statistics}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-graph-up"></i> Thống Kê
+                              </a>
+                          </div>
+                           
+                          <!-- MANAGER Only Links -->
+                          <div sec:authorize="hasRole('MANAGER')" class="mt-3">
+                              <div class="list-group-item bg-warning">
+                                  <strong><i class="bi bi-briefcase"></i> BẢNG QUẢN LÝ</strong>
+                              </div>
+                              <a th:href="@{/manager}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-speedometer2"></i> Trang Chủ
+                              </a>
+                              
+                              <!-- Kiểm duyệt -->
+                              <div class="list-group-item bg-light">
+                                  <small><strong>KIỂM DUYỆT</strong></small>
+                              </div>
+                              <a th:href="@{/manager/moderation}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-shield-check"></i> Bảng Kiểm Duyệt
+                              </a>
+                              <a th:href="@{/manager/moderation/questions/pending}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-clock-history"></i> Câu Hỏi Chờ Duyệt
+                              </a>
+                              <a th:href="@{/manager/questions}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-check-circle"></i> Câu Hỏi Đã Duyệt
+                              </a>
+                              
+                              <!-- Quản lý -->
+                              <div class="list-group-item bg-light">
+                                  <small><strong>QUẢN LÝ</strong></small>
+                              </div>
+                              <a th:href="@{/manager/reports}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-flag"></i> Báo Cáo
+                              </a>
+                              <a th:href="@{/manager/notifications}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-bell"></i> Thông Báo
+                              </a>
+                              <a th:href="@{/manager/notifications/send}" class="list-group-item list-group-item-action">
+                                  <i class="bi bi-send"></i> Gửi Thông Báo
+                              </a>
+                          </div>
+                       </div>
+                   </div>
+            
+            <!-- Main Content Area -->
+            <div class="col-md-10">
+                <!-- Page content will be inserted here -->
+                <div layout:fragment="content">
+                    <p>Page content goes here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p>&copy; 2024 EDUMOET. Built with Java, Spring Boot, Thymeleaf & Bootstrap.</p>
+            <p>
+                <a href="#" class="text-white me-3">Giới Thiệu</a>
+                <a href="#" class="text-white me-3">Liên Hệ</a>
+                <a href="#" class="text-white">Chính Sách Bảo Mật</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SockJS and Stomp.js for WebSocket -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <!-- UTF-8 Encoding Support - Load first -->
+    <script th:src="@{/js/custom.js}"></script>
+    <!-- Custom JS -->
+    <script th:src="@{/js/main.js}"></script>
+    <!-- Image handling script -->
+    <script th:src="@{/js/images.js}"></script>
+    <!-- Chatbot JS -->
+    <script th:src="@{/js/chatbot.js}"></script>
+    
+    <!-- Page specific scripts -->
+    <th:block layout:fragment="extra-scripts"></th:block>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <button class="close-btn" onclick="closeImageModal()">×</button>
+        <img id="fullImage" src="" alt="Full size image">
+    </div>
+</body>
+</html>

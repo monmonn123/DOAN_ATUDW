@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${user.username} + ' - Profile'">User Profile</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <!-- Profile Header Card -->
+    <div class="card mb-4 hover-shadow">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <!-- Avatar -->
+                <div class="col-auto">
+                    <img th:src="${avatarUrl != null ? avatarUrl : (user.profileImage != null && !user.profileImage.isEmpty() ? 'https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/' + user.profileImage : 'https://ui-avatars.com/api/?name=' + user.username + '&size=128&background=0a95ff&color=fff')}" 
+                         class="rounded-circle" 
+                         width="128" 
+                         height="128" 
+                         alt="avatar"
+                         style="border: 4px solid #0a95ff; object-fit: cover;"
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent('[[${user.username}]]') + '&size=128&background=0a95ff&color=fff';">
+                </div>
+                
+                <!-- User Info -->
+                <div class="col">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h1 class="h2 mb-1" th:text="${user.username}">Username</h1>
+                            <p class="text-muted mb-2" th:if="${user.bio}" th:text="${user.bio}">User bio here...</p>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="btn-group" th:if="${currentUser != null and currentUser.id != user.id}">
+                            <form th:action="@{/users/{id}/follow(id=${user.id})}" method="post" th:if="${!isFollowing}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus"></i> Theo Dõi
+                                </button>
+                            </form>
+                            <form th:action="@{/users/{id}/unfollow(id=${user.id})}" method="post" th:if="${isFollowing}">
+                                <button type="submit" class="btn btn-outline-secondary">
+                                    <i class="bi bi-person-check"></i> Đang Theo Dõi
+                                </button>
+                            </form>
+                            <a th:href="@{/messages/compose(to=${user.username})}" class="btn btn-outline-primary ms-2">
+                                <i class="bi bi-envelope"></i> Nhắn Tin
+                            </a>
+                        </div>
+                        <div th:if="${currentUser != null and currentUser.id == user.id}">
+                            <a th:href="@{/profile/edit}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Chỉnh Sửa Hồ Sơ
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Row -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-auto">
+                            <div class="stat-card bg-primary text-white rounded p-3">
+                                <div class="stat-value" th:text="${user.reputation}">0</div>
+                                <div class="stat-label">Danh Tiếng</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card bg-success text-white rounded p-3">
+                                <div class="stat-value" th:text="${user.points}">0</div>
+                                <div class="stat-label">Điểm</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card bg-warning text-dark rounded p-3">
+                                <div class="stat-value" th:text="${'Cấp ' + user.level}">Cấp 1</div>
+                                <div class="stat-label">Cấp Độ Hiện Tại</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card bg-info text-white rounded p-3">
+                                <div class="stat-value" th:text="${totalQuestions}">0</div>
+                                <div class="stat-label">Câu Hỏi</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card bg-secondary text-white rounded p-3">
+                                <div class="stat-value" th:text="${totalAnswers}">0</div>
+                                <div class="stat-label">Câu Trả Lời</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- User Meta -->
+                    <div class="mt-3 text-muted small">
+                        <span th:if="${user.location}">
+                            <i class="bi bi-geo-alt"></i> <span th:text="${user.location}">Địa chỉ</span>
+                        </span>
+                        <span th:if="${user.website}" class="ms-3">
+                            <i class="bi bi-globe"></i> <a th:href="${user.website}" target="_blank" th:text="${user.website}">website</a>
+                        </span>
+                        <span th:if="${user.githubUrl}" class="ms-3">
+                            <i class="bi bi-github"></i> <a th:href="${user.githubUrl}" target="_blank">GitHub</a>
+                        </span>
+                        <span th:if="${user.linkedinUrl}" class="ms-3">
+                            <i class="bi bi-linkedin"></i> <a th:href="${user.linkedinUrl}" target="_blank">LinkedIn</a>
+                        </span>
+                        <span class="ms-3">
+                            <i class="bi bi-calendar"></i> Thành viên từ <span th:text="${#temporals.format(user.createdAt, 'MMM yyyy')}">Jan 2024</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Tabs Navigation -->
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#questions" type="button">
+                        <i class="bi bi-question-circle"></i> Câu Hỏi 
+                        <span class="badge bg-primary" th:text="${totalQuestions}">0</span>
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#answers" type="button">
+                        <i class="bi bi-chat-left-text"></i> Câu Trả Lời 
+                        <span class="badge bg-secondary" th:text="${totalAnswers}">0</span>
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Questions Tab -->
+                <div class="tab-pane fade show active" id="questions">
+                    <div th:if="${questions.isEmpty()}" class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <h5 class="mt-3">No questions yet</h5>
+                        <p class="text-muted" th:if="${currentUser != null and currentUser.id == user.id}">
+                            Start contributing by asking your first question!
+                        </p>
+                        <a th:href="@{/questions/ask}" class="btn btn-primary" th:if="${currentUser != null and currentUser.id == user.id}">
+                            <i class="bi bi-plus-circle"></i> Ask Question
+                        </a>
+                    </div>
+
+                    <div th:each="question : ${questions}" class="question-item">
+                        <div class="row g-0">
+                            <div class="col-auto pe-3">
+                                <div class="question-stats">
+                                    <div class="stat">
+                                        <div class="stat-value" th:text="${question.votes}">0</div>
+                                        <div class="stat-label">votes</div>
+                                    </div>
+                                    <div class="stat" th:classappend="${question.answerCount > 0} ? 'has-answers' : ''">
+                                        <div class="stat-value" th:text="${question.answerCount}">0</div>
+                                        <div class="stat-label">answers</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-2">
+                                    <a th:href="@{/questions/{id}(id=${question.id})}" class="question-title" th:text="${question.title}">
+                                        Question title
+                                    </a>
+                                </h6>
+                                <div class="question-tags">
+                                    <a th:each="tag : ${question.tags}" th:href="@{/tags/{name}(name=${tag.name})}" 
+                                       class="tag-badge" th:text="${tag.name}">tag</a>
+                                </div>
+                                <small class="text-muted">
+                                    asked <span th:text="${#temporals.format(question.createdAt, 'MMM dd, yyyy')}">date</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Answers Tab -->
+                <div class="tab-pane fade" id="answers">
+                    <div th:if="${answers.isEmpty()}" class="text-center py-5">
+                        <i class="bi bi-chat-left-text display-4 text-muted"></i>
+                        <h5 class="mt-3">No answers yet</h5>
+                        <p class="text-muted">Start helping others by answering questions!</p>
+                        <a th:href="@{/}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Browse Questions
+                        </a>
+                    </div>
+
+                    <div th:each="answer : ${answers}" class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <span class="badge bg-success" th:if="${answer.votes > 0}">
+                                        <i class="bi bi-arrow-up"></i> <span th:text="${answer.votes}">0</span> votes
+                                    </span>
+                                    <span class="badge bg-success" th:if="${answer.isAccepted}">
+                                        <i class="bi bi-check-circle"></i> Accepted
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    answered <span th:text="${#temporals.format(answer.createdAt, 'MMM dd, yyyy')}">date</span>
+                                </small>
+                            </div>
+                            <h6 class="mb-2">
+                                <a th:href="@{/questions/{id}(id=${answer.question.id})}" class="text-decoration-none">
+                                    <i class="bi bi-arrow-return-right"></i> <span th:text="${answer.question.title}">Question</span>
+                                </a>
+                            </h6>
+                            <p class="text-muted mb-0" th:text="${#strings.abbreviate(answer.body, 200)}">Answer excerpt...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <!-- Stats Card -->
+            <div class="card mb-3">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bar-chart"></i> Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Questions</span>
+                        <strong th:text="${totalQuestions}">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Answers</span>
+                        <strong th:text="${totalAnswers}">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Comments</span>
+                        <strong th:text="${totalComments}">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Tags -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-tags"></i> Top Tags
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="tag-badge">java</span>
+                        <span class="tag-badge">spring-boot</span>
+                        <span class="tag-badge">sql</span>
+                        <span class="tag-badge">javascript</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

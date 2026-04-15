@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Thẻ</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Thẻ</h1>
+    </div>
+
+    <!-- Search Form -->
+    <form th:action="@{/tags}" method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" 
+                   th:value="${searchQuery}" placeholder="Tìm kiếm thẻ...">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Tìm Kiếm
+            </button>
+        </div>
+    </form>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${sort == 'popular' ? 'active' : ''}" 
+               th:href="@{/tags(sort='popular')}">Phổ Biến</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${sort == 'name' ? 'active' : ''}" 
+               th:href="@{/tags(sort='name')}">Tên</a>
+        </li>
+    </ul>
+
+    <!-- Tags Grid -->
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        <div th:each="tag : ${tags}" class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a th:href="@{/tags/{name}(name=${tag.name})}" 
+                           class="badge bg-secondary text-decoration-none fs-6" 
+                           th:text="${tag.name}">
+                            tag-name
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted small" th:text="${tag.description ?: 'Chưa có mô tả'}">
+                        Tag description
+                    </p>
+                    <div class="text-muted small">
+                        <i class="bi bi-question-circle"></i> 
+                        <span th:text="${tag.questionCount}">0</span> câu hỏi
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav th:if="${totalPages > 1}" aria-label="Tags pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/tags(page=${currentPage - 1}, sort=${sort})}">Previous</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                class="page-item" 
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/tags(page=${i}, sort=${sort})}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/tags(page=${currentPage + 1}, sort=${sort})}">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+

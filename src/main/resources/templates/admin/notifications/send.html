@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Gửi Thông Báo - Admin</title>
+    <style>
+        .fade-in { 
+            animation: fadeIn 0.3s ease-in-out; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(5px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .form-select option {
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container-fluid py-4 fade-in">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="bi bi-megaphone text-danger"></i> Gửi Thông Báo Hệ Thống
+                </h1>
+                <p class="text-muted mb-0">Gửi thông báo đến toàn hệ thống hoặc theo vai trò cụ thể</p>
+            </div>
+            <a th:href="@{/admin/notifications}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Quay Lại
+            </a>
+        </div>
+
+        <!-- Alert Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-envelope-fill"></i> Tạo Thông Báo Mới</h5>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/admin/notifications/send}" method="post">
+                            
+                            <!-- Message Content -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-chat-text"></i> Nội Dung Thông Báo 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control form-control-lg" 
+                                          name="message" 
+                                          id="messageInput"
+                                          rows="5" 
+                                          placeholder="Nhập nội dung thông báo..."
+                                          required
+                                          maxlength="500"></textarea>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Tối đa 500 ký tự
+                                </small>
+                            </div>
+
+                            <!-- Notification Type -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-tag-fill"></i> Loại Thông Báo
+                                </label>
+                                <select class="form-select" name="type" id="typeSelect">
+                                    <option value="SYSTEM" selected>🔔 SYSTEM - Hệ thống</option>
+                                    <option value="QUESTION">❓ QUESTION - Câu hỏi</option>
+                                    <option value="ANSWER">✅ ANSWER - Câu trả lời</option>
+                                    <option value="COMMENT">💬 COMMENT - Bình luận</option>
+                                    <option value="MESSAGE">📧 MESSAGE - Tin nhắn</option>
+                                    <option value="VOTE">👍 VOTE - Bình chọn</option>
+                                    <option value="EVENT">📅 EVENT - Sự kiện</option>
+                                    <option value="ANNOUNCEMENT">📢 ANNOUNCEMENT - Thông báo quan trọng</option>
+                                </select>
+                            </div>
+
+                            <!-- Link (Optional) -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-link-45deg"></i> Đường Dẫn 
+                                    <span class="text-muted">(Tùy chọn)</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="link" 
+                                       id="linkInput"
+                                       placeholder="VD: /questions/123, /admin/users">
+                                <small class="form-text text-muted">
+                                    Đường dẫn khi người dùng click vào thông báo
+                                </small>
+                            </div>
+
+                            <!-- Target Audience -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-people-fill"></i> Người Nhận 
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select form-select-lg" name="target" id="targetSelect">
+                                    <optgroup label="📢 Gửi Hàng Loạt">
+                                        <option value="all" selected>🌐 Tất Cả Người Dùng</option>
+                                        <option value="role:USER">👤 USER - Người dùng thường</option>
+                                        <option value="role:MANAGER">👨‍💼 MANAGER - Quản lý</option>
+                                        <option value="role:ADMIN">👑 ADMIN - Quản trị viên</option>
+                                    </optgroup>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-lightbulb"></i> Chọn đối tượng nhận thông báo theo vai trò
+                                </small>
+                            </div>
+
+                            <!-- Preview Card -->
+                            <div class="card bg-light border-info mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-eye"></i> Xem Trước</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-primary mb-0" role="alert">
+                                        <div class="d-flex align-items-start">
+                                            <i class="bi bi-bell-fill me-3 mt-1 fs-4"></i>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <strong id="previewType" class="text-primary">SYSTEM</strong>
+                                                    <small class="text-muted">Vừa xong</small>
+                                                </div>
+                                                <p class="mb-2" id="previewMessage">
+                                                    Nội dung thông báo sẽ hiển thị ở đây...
+                                                </p>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-send"></i> Gửi đến: 
+                                                    <strong id="previewTarget">Tất cả người dùng</strong>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex justify-content-between gap-2 pt-3 border-top">
+                                <a th:href="@{/admin/all-features}" class="btn btn-secondary btn-lg px-4">
+                                    <i class="bi bi-x-circle"></i> Hủy
+                                </a>
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="bi bi-send-fill"></i> Gửi Thông Báo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Help Card -->
+                <div class="card shadow border-0 mt-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-info"><i class="bi bi-lightbulb"></i> Hướng Dẫn</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li class="mb-2">
+                                <strong>Thông báo hệ thống:</strong> Gửi đến tất cả người dùng hoặc theo vai trò
+                            </li>
+                            <li class="mb-2">
+                                <strong>Loại thông báo:</strong> Chọn loại phù hợp để hiển thị icon đúng
+                            </li>
+                            <li class="mb-2">
+                                <strong>Đường dẫn:</strong> Thêm link để người dùng có thể click vào thông báo
+                            </li>
+                            <li>
+                                <strong>Preview:</strong> Kiểm tra nội dung trước khi gửi
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔄 Initializing Admin Notification Preview...');
+        
+        // Get elements
+        const messageInput = document.getElementById('messageInput');
+        const typeSelect = document.getElementById('typeSelect');
+        const targetSelect = document.getElementById('targetSelect');
+        const previewMessage = document.getElementById('previewMessage');
+        const previewType = document.getElementById('previewType');
+        const previewTarget = document.getElementById('previewTarget');
+        
+        // Update preview function
+        function updatePreview() {
+            // Update message
+            const message = messageInput.value.trim();
+            previewMessage.textContent = message || 'Nội dung thông báo sẽ hiển thị ở đây...';
+            
+            // Update type
+            const typeText = typeSelect.options[typeSelect.selectedIndex].text;
+            previewType.textContent = typeText;
+            
+            // Update target
+            const targetValue = targetSelect.value;
+            if (targetValue === 'all') {
+                previewTarget.textContent = '🌐 Tất cả người dùng';
+            } else if (targetValue.startsWith('role:')) {
+                const role = targetValue.substring(5);
+                const roleMap = {
+                    'USER': '👤 Tất cả USER',
+                    'MANAGER': '👨‍💼 Tất cả MANAGER',
+                    'ADMIN': '👑 Tất cả ADMIN'
+                };
+                previewTarget.textContent = roleMap[role] || role;
+            } else {
+                previewTarget.textContent = targetSelect.options[targetSelect.selectedIndex].text;
+            }
+        }
+        
+        // Add event listeners
+        messageInput.addEventListener('input', updatePreview);
+        typeSelect.addEventListener('change', updatePreview);
+        targetSelect.addEventListener('change', updatePreview);
+        
+        // Character counter
+        messageInput.addEventListener('input', function() {
+            const length = this.value.length;
+            const maxLength = this.getAttribute('maxlength');
+            
+            if (length > maxLength * 0.8) {
+                const parent = this.parentElement;
+                let counter = parent.querySelector('.char-counter');
+                
+                if (!counter) {
+                    counter = document.createElement('small');
+                    counter.className = 'char-counter text-muted float-end mt-1';
+                    parent.appendChild(counter);
+                }
+                
+                counter.textContent = length + '/' + maxLength;
+                counter.classList.toggle('text-danger', length >= maxLength);
+            }
+        });
+        
+        // Initialize preview
+        updatePreview();
+        console.log('✅ Admin Notification Preview initialized!');
+    });
+    </script>
+</div>
+</body>
+</html>

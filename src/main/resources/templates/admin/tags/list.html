@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Quản Lý Thẻ - Admin</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2"><i class="bi bi-tags"></i> Quản Lý Thẻ</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTagModal">
+                <i class="bi bi-plus-circle"></i> Tạo Thẻ Mới
+            </button>
+        </div>
+
+        <!-- Flash messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-primary shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Tổng Số Thẻ</h6>
+                                <h2 class="mb-0" th:text="${totalTags}">0</h2>
+                            </div>
+                            <i class="bi bi-tags" style="font-size: 3rem; opacity: 0.5;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-success shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Đang Sử Dụng</h6>
+                                <h2 class="mb-0" th:text="${tagsWithQuestions}">0</h2>
+                            </div>
+                            <i class="bi bi-check-circle" style="font-size: 3rem; opacity: 0.5;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-white bg-secondary shadow">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Chưa Dùng</h6>
+                                <h2 class="mb-0" th:text="${unusedTags}">0</h2>
+                            </div>
+                            <i class="bi bi-dash-circle" style="font-size: 3rem; opacity: 0.5;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="card mb-4 shadow">
+            <div class="card-body">
+                <form th:action="@{/admin/tags}" method="get" class="row g-3">
+                    <div class="col-md-10">
+                        <label for="search" class="form-label"><i class="bi bi-search"></i> Tìm Kiếm Thẻ</label>
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Nhập tên thẻ..." th:value="${search}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="bi bi-search"></i> Tìm
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Merge Tags Form -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-shuffle"></i> Gộp Thẻ</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted"><i class="bi bi-info-circle"></i> Gộp 2 thẻ: tất cả câu hỏi của thẻ nguồn sẽ chuyển sang thẻ đích, sau đó thẻ nguồn sẽ bị xóa.</p>
+                <form th:action="@{/admin/tags/merge}" method="post" class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label"><strong>Thẻ Nguồn</strong> (sẽ bị xóa):</label>
+                        <select name="sourceTagId" class="form-select" required>
+                            <option value="">-- Chọn thẻ nguồn --</option>
+                            <option th:each="tag : ${tags.content}" th:value="${tag.id}" 
+                                    th:text="${tag.name} + ' (' + ${tag.questionCount} + ' câu hỏi)'"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label"><strong>Thẻ Đích</strong> (sẽ nhận câu hỏi):</label>
+                        <select name="targetTagId" class="form-select" required>
+                            <option value="">-- Chọn thẻ đích --</option>
+                            <option th:each="tag : ${tags.content}" th:value="${tag.id}" 
+                                    th:text="${tag.name} + ' (' + ${tag.questionCount} + ' câu hỏi)'"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-warning w-100" onclick="return confirm('Xác nhận gộp 2 thẻ?')">
+                            <i class="bi bi-shuffle"></i> Gộp
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tags Table -->
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="m-0"><i class="bi bi-list"></i> Danh Sách Thẻ (<span th:text="${totalItems}">0</span>)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">ID</th>
+                                <th style="width: 25%;">
+                                    <a th:href="@{/admin/tags(page=${currentPage}, sortBy='name', sortDir=${sortBy == 'name' ? reverseSortDir : 'asc'})}" class="text-decoration-none">
+                                        Tên Thẻ
+                                        <i class="bi" th:classappend="${sortBy == 'name' ? (sortDir == 'asc' ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up'}"></i>
+                                    </a>
+                                </th>
+                                <th style="width: 40%;">Mô Tả</th>
+                                <th style="width: 15%;">
+                                    <a th:href="@{/admin/tags(page=${currentPage}, sortBy='questionCount', sortDir=${sortBy == 'questionCount' ? reverseSortDir : 'desc'})}" class="text-decoration-none">
+                                        Số Câu Hỏi
+                                        <i class="bi" th:classappend="${sortBy == 'questionCount' ? (sortDir == 'asc' ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up'}"></i>
+                                    </a>
+                                </th>
+                                <th style="width: 200px;" class="text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="tag : ${tags.content}">
+                                <td th:text="${tag.id}">1</td>
+                                <td>
+                                    <a th:href="@{/admin/tags/{id}(id=${tag.id})}" class="text-decoration-none">
+                                        <span class="badge bg-secondary fs-6" th:text="${tag.name}">java</span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <span th:if="${tag.description != null and !tag.description.isEmpty()}" 
+                                          th:text="${#strings.abbreviate(tag.description, 80)}">Description</span>
+                                    <span th:if="${tag.description == null or tag.description.isEmpty()}" 
+                                          class="text-muted fst-italic">Chưa có mô tả</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${tag.questionCount > 0} ? 'bg-success' : 'bg-secondary'" 
+                                          th:text="${tag.questionCount}">10</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a th:href="@{/admin/tags/{id}(id=${tag.id})}" class="btn btn-outline-info" title="Xem">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a th:href="@{/admin/tags/{id}/edit(id=${tag.id})}" class="btn btn-outline-warning" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form th:action="@{/admin/tags/{id}/delete(id=${tag.id})}" method="post" style="display: inline;"
+                                              onsubmit="return confirm('Bạn có chắc muốn xóa thẻ này?');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                    th:disabled="${tag.questionCount > 0}"
+                                                    title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(tags.content)}">
+                                <td colspan="5" class="text-center py-4">
+                                    <i class="bi bi-inbox display-4 text-muted"></i>
+                                    <p class="text-muted mt-2">Không có thẻ nào</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div th:if="${totalPages > 1}" class="card-footer">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/tags(page=${currentPage - 1}, sortBy=${sortBy}, sortDir=${sortDir}, search=${search})}">
+                                    <i class="bi bi-chevron-left"></i> Trước
+                                </a>
+                            </li>
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/admin/tags(page=${i}, sortBy=${sortBy}, sortDir=${sortDir}, search=${search})}" 
+                                   th:text="${i + 1}">1</a>
+                            </li>
+                            <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+                                <a class="page-link" th:href="@{/admin/tags(page=${currentPage + 1}, sortBy=${sortBy}, sortDir=${sortDir}, search=${search})}">
+                                    Sau <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Tag Modal -->
+    <div class="modal fade" id="createTagModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/tags/create}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Tạo Thẻ Mới</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="tagName" class="form-label">Tên Thẻ <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="tagName" name="name" required 
+                                   placeholder="Ví dụ: java, python, javascript">
+                            <small class="text-muted">Tên thẻ sẽ tự động chuyển về chữ thường</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tagDescription" class="form-label">Mô Tả</label>
+                            <textarea class="form-control" id="tagDescription" name="description" rows="3" 
+                                      placeholder="Mô tả ngắn gọn về thẻ..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Tạo Thẻ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Edit Profile</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">Edit Profile</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form th:action="@{/users/{id}/edit(id=${user.id})}" th:object="${user}" method="post">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" th:field="*{username}" id="username" disabled>
+                    <small class="form-text text-muted">Username cannot be changed</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" th:field="*{email}" id="email" disabled>
+                    <small class="form-text text-muted">Email cannot be changed</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="about" class="form-label">About Me</label>
+                    <textarea class="form-control" th:field="*{about}" id="about" rows="5" 
+                              placeholder="Tell us about yourself..."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" class="form-control" th:field="*{location}" id="location" 
+                           placeholder="City, Country">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="website" class="form-label">Website</label>
+                    <input type="url" class="form-control" th:field="*{website}" id="website" 
+                           placeholder="https://example.com">
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                    <a th:href="@{/users/{id}(id=${user.id})}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

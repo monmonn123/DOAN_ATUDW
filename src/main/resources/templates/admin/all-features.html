@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>Quản Trị - Tất Cả Tính Năng</title>
+</head>
+<body>
+<div layout:fragment="content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-shield-lock text-danger"></i> Quản Trị - Tất Cả Tính Năng
+                    </h1>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Tổng Người Dùng</h4>
+                                        <h2 class="mb-0" th:text="${totalUsers}">1,234</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-people fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Câu Hỏi</h4>
+                                        <h2 class="mb-0" th:text="${totalQuestions}">5,678</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-question-circle fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Câu Trả Lời</h4>
+                                        <h2 class="mb-0" th:text="${totalAnswers}">12,345</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-chat-dots fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h4 class="card-title">Chờ Duyệt</h4>
+                                        <h2 class="mb-0" th:text="${pendingQuestions}">23</h2>
+                                    </div>
+                                    <div class="align-self-center">
+                                        <i class="bi bi-flag fs-1"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Admin Features -->
+                <div class="row">
+                    <!-- Quản Lý Người Dùng -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-people"></i> Quản Lý Người Dùng
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-list-ul"></i> Xem Tất Cả Người Dùng
+                                    </a>                                    
+                                    <a th:href="@{/users}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-search"></i> Tìm Kiếm Người Dùng
+                                    </a>
+                                    <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-person-x"></i> Người Dùng Bị Khóa
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quản Lý Nội Dung -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-file-text"></i> Quản Lý Nội Dung
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a th:href="@{/admin/questions}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-question-circle"></i> Quản Lý Câu Hỏi
+                                    </a>
+                                    <a th:href="@{/admin/tags}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-tags"></i> Quản Lý Thẻ
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kiểm Duyệt -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-shield-check"></i> Kiểm Duyệt
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-clock-history"></i> Câu Hỏi Chờ Duyệt
+                                        <span th:if="${pendingQuestions > 0}" class="badge bg-danger ms-2" th:text="${pendingQuestions}">5</span>
+                                    </a>
+                                    <a th:href="@{/admin/moderation}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-shield-check"></i> Bảng Điều Khiển Kiểm Duyệt
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quản Lý Hệ Thống -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-gear"></i> Quản Lý Hệ Thống
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a th:href="@{/admin/notifications}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-bell-fill"></i> Quản Lý Thông Báo
+                                    </a>
+                                    <a th:href="@{/admin/notifications/send}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-send-fill"></i> Gửi Thông Báo
+                                    </a>
+                                    <a th:href="@{/admin/activity-logs}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-list-ul"></i> Nhật Ký Hoạt Động
+                                    </a>
+                                    <a th:href="@{/admin/statistics}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-graph-up"></i> Thống Kê
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tính Năng Nâng Cao -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-dark text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-tools"></i> Tính Năng Nâng Cao
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    <a th:href="@{/admin/activity-logs}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-shield-lock"></i> Nhật Ký Hoạt Động
+                                    </a>
+                                    <a th:href="@{/admin/statistics}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-bar-chart"></i> Thống Kê Hệ Thống
+                                    </a>
+                                    <a th:href="@{/admin/users}" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-people-fill"></i> Quản Lý User
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thao Tác Nhanh -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-lightning"></i> Thao Tác Nhanh
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <a th:href="@{/admin/notifications/send}" class="btn btn-outline-primary">
+                                        <i class="bi bi-bell"></i> Gửi Thông Báo Hệ Thống
+                                    </a>
+                                    <a th:href="@{/admin/users}" class="btn btn-outline-success">
+                                        <i class="bi bi-people"></i> Quản Lý Người Dùng
+                                    </a>
+                                    <a th:href="@{/admin/questions}" class="btn btn-outline-info">
+                                        <i class="bi bi-question-circle"></i> Quản Lý Câu Hỏi
+                                    </a>
+                                    <a th:href="@{/admin/moderation}" class="btn btn-outline-warning">
+                                        <i class="bi bi-shield-check"></i> Kiểm Duyệt
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hoạt Động Gần Đây -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-clock-history"></i> Hoạt Động Gần Đây
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Thời Gian</th>
+                                                <th>Người Dùng</th>
+                                                <th>Hành Động</th>
+                                                <th>Chi Tiết</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr th:if="${recentLogs.empty}">
+                                                <td colspan="4" class="text-center text-muted">
+                                                    <i class="bi bi-inbox"></i> Chưa có hoạt động gần đây
+                                                </td>
+                                            </tr>
+                                            <tr th:each="log : ${recentLogs}">
+                                                <td th:text="${#temporals.format(log.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</td>
+                                                <td th:text="${log.user != null ? log.user.username : 'System'}">admin</td>
+                                                <td th:text="${log.action}">Quản Lý Người Dùng</td>
+                                                <td th:text="${log.details}">Chi tiết hoạt động</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org" 
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title>New Message</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a th:href="@{/messages/inbox}"><i class="bi bi-envelope"></i> Messages</a></li>
+                    <li class="breadcrumb-item active">New Message</li>
+                </ol>
+            </nav>
+
+            <!-- Page Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-envelope-plus"></i> Compose New Message
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/messages/send}" method="post">
+                        <!-- Recipient -->
+                        <div class="mb-3">
+                            <label for="recipient" class="form-label">
+                                <i class="bi bi-person"></i> To:
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">@</span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="recipient" 
+                                       name="to"
+                                       th:value="${recipientUsername}"
+                                       placeholder="Enter username" 
+                                       required
+                                       autocomplete="off"
+                                       list="userSuggestions">
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#userSearchModal">
+                                    <i class="bi bi-search"></i> Find User
+                                </button>
+                            </div>
+                            <datalist id="userSuggestions">
+                                <option th:each="user : ${recentUsers}" th:value="${user.username}"></option>
+                            </datalist>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Start typing to see suggestions
+                            </div>
+                        </div>
+
+                        <!-- Subject (Optional) -->
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">
+                                <i class="bi bi-chat-quote"></i> Subject: <span class="text-muted">(Optional)</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="subject" 
+                                   name="subject"
+                                   placeholder="What's this message about?">
+                        </div>
+
+                        <!-- Message Body -->
+                        <div class="mb-3">
+                            <label for="body" class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Message:
+                            </label>
+                            <textarea class="form-control" 
+                                      id="body" 
+                                      name="body" 
+                                      rows="8" 
+                                      placeholder="Type your message here...&#10;&#10;Be clear and concise. Remember to be respectful!"
+                                      required
+                                      minlength="10"></textarea>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Minimum 10 characters. Markdown supported.
+                            </div>
+                        </div>
+
+                        <!-- Attachments (Future feature) -->
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-paperclip"></i> Attachments: <span class="badge bg-secondary">Coming Soon</span>
+                            </label>
+                            <div class="border rounded p-3 text-center text-muted">
+                                <i class="bi bi-cloud-upload display-4"></i>
+                                <p class="mt-2 mb-0">File attachments will be available soon</p>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Notice -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-shield-check"></i>
+                            <strong>Privacy Notice:</strong> Your messages are private and only visible to you and the recipient. 
+                            Please follow our community guidelines.
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-send"></i> Send Message
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="saveDraft()">
+                                    <i class="bi bi-save"></i> Save Draft
+                                </button>
+                            </div>
+                            <a th:href="@{/messages/inbox}" class="btn btn-outline-danger btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Messaging Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Be clear and specific about your question or topic</li>
+                        <li>Use proper grammar and formatting for better understanding</li>
+                        <li>Be patient - users may not respond immediately</li>
+                        <li>Respect others' time and expertise</li>
+                        <li>Don't share sensitive personal information</li>
+                        <li>Report any inappropriate messages to moderators</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Search Modal -->
+    <div class="modal fade" id="userSearchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-search"></i> Find User
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="text" 
+                               class="form-control" 
+                               id="userSearch" 
+                               placeholder="Search by username..."
+                               autocomplete="off">
+                    </div>
+                    
+                    <div id="searchResults">
+                        <p class="text-muted text-center">Start typing to search for users...</p>
+                    </div>
+
+                    <!-- Popular Users -->
+                    <div class="mt-4">
+                        <h6>Popular Users:</h6>
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action" onclick="selectUser('john_doe')">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://ui-avatars.com/api/?name=John+Doe" class="rounded-circle me-3" width="32" height="32" alt="avatar">
+                                    <div>
+                                        <h6 class="mb-0">john_doe</h6>
+                                        <small class="text-muted">1,234 reputation</small>
+                                    </div>
+                                </div>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="selectUser('jane_smith')">
+                                <div class="d-flex align-items-center">
+                                    <img src="https://ui-avatars.com/api/?name=Jane+Smith" class="rounded-circle me-3" width="32" height="32" alt="avatar">
+                                    <div>
+                                        <h6 class="mb-0">jane_smith</h6>
+                                        <small class="text-muted">2,567 reputation</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// Auto-save draft to localStorage
+const recipientInput = document.getElementById('recipient');
+const subjectInput = document.getElementById('subject');
+const bodyInput = document.getElementById('body');
+
+[recipientInput, subjectInput, bodyInput].forEach(element => {
+    const saved = localStorage.getItem('draft_' + element.id);
+    if (saved && element.value === '') {
+        element.value = saved;
+    }
+    
+    element.addEventListener('input', function() {
+        localStorage.setItem('draft_' + element.id, element.value);
+    });
+});
+
+function saveDraft() {
+    alert('Draft saved! You can continue later.');
+}
+
+// Clear draft after sending
+document.querySelector('form').addEventListener('submit', function() {
+    localStorage.removeItem('draft_recipient');
+    localStorage.removeItem('draft_subject');
+    localStorage.removeItem('draft_body');
+});
+
+// User search functionality
+let searchTimeout;
+document.getElementById('userSearch').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    const resultsDiv = document.getElementById('searchResults');
+    
+    if (query.length < 2) {
+        resultsDiv.innerHTML = '<p class="text-muted text-center">Type at least 2 characters...</p>';
+        return;
+    }
+    
+    resultsDiv.innerHTML = '<p class="text-muted text-center">Searching...</p>';
+    
+    // Debounce search
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        fetch(`/messages/api/search-users?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(users => {
+                if (users.length === 0) {
+                    resultsDiv.innerHTML = '<p class="text-muted text-center">No users found</p>';
+                    return;
+                }
+                
+                let html = '<div class="list-group">';
+                users.forEach(user => {
+                    html += `
+                        <a href="#" class="list-group-item list-group-item-action" onclick="selectUser('${user.username}')">
+                            <div class="d-flex align-items-center">
+                                <img src="${user.avatar}" class="rounded-circle me-3" width="32" height="32" alt="avatar">
+                                <div>
+                                    <h6 class="mb-0">${user.username}</h6>
+                                    <small class="text-muted">${user.reputation} reputation</small>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                });
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Search error:', error);
+                resultsDiv.innerHTML = '<p class="text-danger text-center">Error searching users</p>';
+            });
+    }, 300);
+});
+
+function selectUser(username) {
+    document.getElementById('recipient').value = username;
+    bootstrap.Modal.getInstance(document.getElementById('userSearchModal')).hide();
+}
+
+// Character counter
+bodyInput.addEventListener('input', function() {
+    const count = this.value.length;
+    // You can add a character counter UI here if needed
+});
+</script>
+</th:block>
+</body>
+</html>

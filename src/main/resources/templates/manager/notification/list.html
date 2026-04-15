@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+  <title th:text="${pageTitle}">Quản lý thông báo</title>
+</head>
+<body>
+<div layout:fragment="content">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h4 mb-0 text-dark">
+        <i class="bi bi-bell text-warning"></i> Quản lý thông báo
+      </h1>
+      <p class="text-muted mb-0">
+        Tổng <strong th:text="${totalItems}">0</strong> thông báo
+      </p>
+    </div>
+    <a th:href="@{/manager/notifications/send}" class="btn btn-primary">
+      <i class="bi bi-send"></i> Gửi thông báo
+    </a>
+  </div>
+
+  <!-- Alert Messages -->
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle"></i> <span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> <span th:text="${errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- Batch Actions -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <input type="checkbox" class="form-check-input" id="selectAll">
+          <label class="form-check-label ms-2" for="selectAll">
+            Chọn tất cả
+          </label>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" id="deleteBatchBtn" disabled>
+          <i class="bi bi-trash"></i> Xóa đã chọn
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Table -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-dark text-center">
+          <tr>
+            <th style="width: 3%">
+              <input type="checkbox" class="form-check-input" id="selectAllHeader">
+            </th>
+            <th style="width: 5%">ID</th>
+            <th style="width: 35%" class="text-start">Nội dung</th>
+            <th style="width: 15%">Người gửi</th>
+            <th style="width: 10%">Loại</th>
+            <th style="width: 12%">Ngày tạo</th>
+            <th style="width: 10%">Trạng thái</th>
+            <th style="width: 10%">Hành động</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="n : ${notifications}" class="text-center">
+            <td>
+              <!-- Chỉ cho phép chọn notification không phải của Admin -->
+              <input type="checkbox" 
+                     class="form-check-input notification-checkbox" 
+                     th:value="${n.id}"
+                     th:disabled="${n.sender != null && n.sender.role == 'ADMIN'}">
+            </td>
+            <td th:text="${n.id}"></td>
+            <td class="text-start">
+              <div th:text="${n.message}"></div>
+              <small class="text-muted" th:if="${n.link != null}">
+                <a th:href="${n.link}" target="_blank">
+                  <i class="bi bi-link-45deg"></i> Xem chi tiết
+                </a>
+              </small>
+            </td>
+            <td>
+              <span th:if="${n.sender != null}">
+                <span th:text="${n.sender.username}"></span>
+                <span th:if="${n.sender.role == 'ADMIN'}" class="badge bg-danger ms-1">Admin</span>
+              </span>
+              <span th:unless="${n.sender != null}" class="text-muted">System</span>
+            </td>
+            <td>
+              <span th:switch="${n.type}">
+                <span th:case="'QUESTION'" class="badge bg-primary">Question</span>
+                <span th:case="'ANSWER'" class="badge bg-success">Answer</span>
+                <span th:case="'COMMENT'" class="badge bg-info">Comment</span>
+                <span th:case="'MESSAGE'" class="badge bg-warning">Message</span>
+                <span th:case="'SYSTEM'" class="badge bg-secondary">System</span>
+                <span th:case="*" class="badge bg-light text-dark" th:text="${n.type}">Other</span>
+              </span>
+            </td>
+            <td th:text="${#temporals.format(n.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+            <td>
+              <span th:classappend="${n.isRead ? 'badge bg-success' : 'badge bg-warning text-dark'}"
+                    th:text="${n.isRead ? 'Đã đọc' : 'Chưa đọc'}"></span>
+            </td>
+            <td>
+              <!-- Chỉ hiển thị nút xóa nếu không phải notification của Admin -->
+              <form th:if="${n.sender == null || n.sender.role != 'ADMIN'}"
+                    th:action="@{'/manager/notifications/' + ${n.id} + '/delete'}" 
+                    method="post"
+                    style="display:inline;"
+                    onsubmit="return confirm('Xóa thông báo này?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              <span th:if="${n.sender != null && n.sender.role == 'ADMIN'}" 
+                    class="text-muted small">
+                <i class="bi bi-lock"></i>
+              </span>
+            </td>
+          </tr>
+          <tr th:if="${notifications.isEmpty()}">
+            <td colspan="8" class="text-center text-muted py-4">
+              <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+              <p class="mt-2">Không có thông báo nào.</p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="card-footer bg-white" th:if="${totalPages > 1}">
+      <nav>
+        <ul class="pagination justify-content-center mb-0">
+          <!-- Previous -->
+          <li class="page-item" th:classappend="${currentPage == 0 ? 'disabled' : ''}">
+            <a class="page-link" th:href="@{/manager/notifications(page=${currentPage - 1})}">
+              <i class="bi bi-chevron-left"></i> Trước
+            </a>
+          </li>
+          
+          <!-- Page numbers -->
+          <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+              th:if="${i >= (currentPage - 2) && i <= (currentPage + 2)}"
+              class="page-item"
+              th:classappend="${i == currentPage ? 'active' : ''}">
+            <a class="page-link" 
+               th:href="@{/manager/notifications(page=${i})}"
+               th:text="${i + 1}">1</a>
+          </li>
+          
+          <!-- Next -->
+          <li class="page-item" th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}">
+            <a class="page-link" th:href="@{/manager/notifications(page=${currentPage + 1})}">
+              Sau <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      
+      <p class="text-center text-muted mt-2 mb-0">
+        Trang <strong th:text="${currentPage + 1}">1</strong> / <strong th:text="${totalPages}">1</strong>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<th:block layout:fragment="extra-scripts">
+<script>
+// Select All functionality
+const selectAllCheckbox = document.getElementById('selectAll');
+const selectAllHeader = document.getElementById('selectAllHeader');
+const notificationCheckboxes = document.querySelectorAll('.notification-checkbox');
+const deleteBatchBtn = document.getElementById('deleteBatchBtn');
+
+// Sync both "select all" checkboxes
+function syncSelectAll() {
+    const enabledCheckboxes = Array.from(notificationCheckboxes).filter(cb => !cb.disabled);
+    const checkedCount = enabledCheckboxes.filter(cb => cb.checked).length;
+    const allChecked = enabledCheckboxes.length > 0 && checkedCount === enabledCheckboxes.length;
+    
+    selectAllCheckbox.checked = allChecked;
+    selectAllHeader.checked = allChecked;
+    
+    // Enable/disable delete button
+    deleteBatchBtn.disabled = checkedCount === 0;
+}
+
+// Select/deselect all
+function toggleSelectAll(checked) {
+    notificationCheckboxes.forEach(cb => {
+        if (!cb.disabled) {
+            cb.checked = checked;
+        }
+    });
+    syncSelectAll();
+}
+
+selectAllCheckbox?.addEventListener('change', function() {
+    toggleSelectAll(this.checked);
+});
+
+selectAllHeader?.addEventListener('change', function() {
+    toggleSelectAll(this.checked);
+});
+
+notificationCheckboxes.forEach(cb => {
+    cb.addEventListener('change', syncSelectAll);
+});
+
+// Delete batch
+deleteBatchBtn?.addEventListener('click', function() {
+    const selectedIds = Array.from(notificationCheckboxes)
+        .filter(cb => cb.checked && !cb.disabled)
+        .map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert('Vui lòng chọn ít nhất 1 thông báo để xóa');
+        return;
+    }
+    
+    if (confirm(`Xóa ${selectedIds.length} thông báo đã chọn?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/manager/notifications/delete-batch';
+        
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'notificationIds';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+
+// Initialize on page load
+syncSelectAll();
+</script>
+</th:block>
+
+<style>
+  [layout\:fragment="content"] { 
+    animation: fadeIn 0.3s ease-in-out; 
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+</body>
+</html>

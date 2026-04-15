@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" 
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout/main}">
+<head>
+    <title th:text="${pageTitle}">Thẻ</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex align-items-center mb-4">
+        <span class="badge bg-secondary fs-3 me-3" th:text="${tag.name}">tag</span>
+        <div>
+            <span class="text-muted">
+                <i class="bi bi-question-circle"></i> 
+                <span th:text="${tag.questionCount}">0</span> câu hỏi
+            </span>
+        </div>
+    </div>
+    
+    <p th:if="${tag.description}" class="lead mb-4" th:text="${tag.description}">
+        Tag description
+    </p>
+    
+    <h3 class="mb-3">Câu hỏi được gắn thẻ [<span th:text="${tag.name}">tag</span>]</h3>
+    
+    <div th:if="${questions.isEmpty()}" class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Chưa có câu hỏi nào với thẻ này.
+    </div>
+    
+    <div th:each="question : ${questions}" class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2 text-center">
+                    <div class="mb-2">
+                        <strong th:text="${question.votes}">0</strong>
+                        <small class="text-muted d-block">phiếu</small>
+                    </div>
+                    <div class="mb-2">
+                        <strong th:text="${question.answers.size()}">0</strong>
+                        <small class="text-muted d-block">trả lời</small>
+                    </div>
+                    <div>
+                        <strong th:text="${question.views}">0</strong>
+                        <small class="text-muted d-block">lượt xem</small>
+                    </div>
+                </div>
+                <div class="col-md-10">
+                    <h5 class="card-title">
+                        <a th:href="@{/questions/{id}(id=${question.id})}" th:text="${question.title}">Question</a>
+                    </h5>
+                    <p class="card-text text-muted" th:text="${#strings.abbreviate(question.body, 200)}">Preview</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span th:each="qtag : ${question.tags}" class="badge bg-secondary me-1" th:text="${qtag.name}">tag</span>
+                        </div>
+                        <div class="text-muted small">
+                            đã hỏi <span th:text="${#temporals.format(question.createdAt, 'dd/MM/yyyy')}">date</span> bởi 
+                            <a th:href="@{/users/{id}(id=${question.author.id})}" th:text="${question.author.username}">user</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <nav th:if="${totalPages > 1}" aria-label="Questions pagination">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/tags/{name}(name=${tag.name}, page=${currentPage - 1})}">Trước</a>
+            </li>
+            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                class="page-item" 
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/tags/{name}(name=${tag.name}, page=${i})}" th:text="${i + 1}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/tags/{name}(name=${tag.name}, page=${currentPage + 1})}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+</body>
+</html>
+
