@@ -75,6 +75,7 @@ public class User {
 
     @Column(nullable = false)
     private Integer views = 0;
+    
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -114,6 +115,13 @@ public class User {
 
     @Column(nullable = false)
     private Boolean isBanned = false;
+    
+    //=====FIX Rate Limiting=====
+    @Column(nullable = false)
+    private Integer failedLoginAttempts = 0;
+
+    private LocalDateTime accountLockedUntil;
+    //===========================
 
     private LocalDateTime bannedUntil;
 

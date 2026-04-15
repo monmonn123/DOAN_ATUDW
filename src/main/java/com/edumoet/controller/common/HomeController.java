@@ -44,7 +44,6 @@ public class HomeController {
     }
 
     @GetMapping({"/", "/home"})
-    @Transactional(readOnly = true)
     public String home(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,

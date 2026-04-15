@@ -28,23 +28,34 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        // Check if user is banned
+        // Nếu khóa brute force đã hết hạn thì mở khóa lại
+        if (user.getAccountLockedUntil() != null && LocalDateTime.now().isAfter(user.getAccountLockedUntil())) {
+            user.setAccountLockedUntil(null);
+            user.setFailedLoginAttempts(0);
+            userRepository.save(user);
+        }
+
         boolean isAccountLocked = false;
+
+        // Khóa do admin ban
         if (user.getIsBanned() != null && user.getIsBanned()) {
-            // Check if temporary ban has expired
             if (user.getBannedUntil() != null) {
                 isAccountLocked = LocalDateTime.now().isBefore(user.getBannedUntil());
             } else {
-                // Permanent ban
-                isAccountLocked = true;
+                isAccountLocked = true; // khóa vĩnh viễn
             }
         }
 
-        // Check if account is disabled
+        // Khóa tạm do brute force
+        if (user.getAccountLockedUntil() != null && LocalDateTime.now().isBefore(user.getAccountLockedUntil())) {
+            isAccountLocked = true;
+        }
+
+        // Tài khoản bị disable
         boolean isDisabled = (user.getIsActive() != null && !user.getIsActive());
 
         List<GrantedAuthority> authorities = Collections.singletonList(
-            new SimpleGrantedAuthority("ROLE_" + user.getRole())
+                new SimpleGrantedAuthority("ROLE_" + user.getRole())
         );
 
         return org.springframework.security.core.userdetails.User
@@ -52,9 +63,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)
-                .accountLocked(isAccountLocked) // TRUE if banned
+                .accountLocked(isAccountLocked)
                 .credentialsExpired(false)
-                .disabled(isDisabled) // TRUE if not active
+                .disabled(isDisabled)
                 .build();
     }
 
@@ -63,23 +74,34 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
 
-        // Check if user is banned
+        // Nếu khóa brute force đã hết hạn thì mở khóa lại
+        if (user.getAccountLockedUntil() != null && LocalDateTime.now().isAfter(user.getAccountLockedUntil())) {
+            user.setAccountLockedUntil(null);
+            user.setFailedLoginAttempts(0);
+            userRepository.save(user);
+        }
+
         boolean isAccountLocked = false;
+
+        // Khóa do admin ban
         if (user.getIsBanned() != null && user.getIsBanned()) {
-            // Check if temporary ban has expired
             if (user.getBannedUntil() != null) {
                 isAccountLocked = LocalDateTime.now().isBefore(user.getBannedUntil());
             } else {
-                // Permanent ban
-                isAccountLocked = true;
+                isAccountLocked = true; // khóa vĩnh viễn
             }
         }
 
-        // Check if account is disabled
+        // Khóa tạm do brute force
+        if (user.getAccountLockedUntil() != null && LocalDateTime.now().isBefore(user.getAccountLockedUntil())) {
+            isAccountLocked = true;
+        }
+
+        // Tài khoản bị disable
         boolean isDisabled = (user.getIsActive() != null && !user.getIsActive());
 
         List<GrantedAuthority> authorities = Collections.singletonList(
-            new SimpleGrantedAuthority("ROLE_" + user.getRole())
+                new SimpleGrantedAuthority("ROLE_" + user.getRole())
         );
 
         return org.springframework.security.core.userdetails.User
@@ -87,10 +109,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)
-                .accountLocked(isAccountLocked) // TRUE if banned
+                .accountLocked(isAccountLocked)
                 .credentialsExpired(false)
-                .disabled(isDisabled) // TRUE if not active
+                .disabled(isDisabled)
                 .build();
     }
 }
-

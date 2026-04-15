@@ -59,7 +59,7 @@
                     <div class="mb-4">
                         <label class="text-muted small fw-bold">NỘI DUNG</label>
                         <div class="border rounded p-3 bg-light mt-1">
-                            <div th:utext="${question.body}">Question body content...</div>
+                            <div th:text="${question.body}">Question body content...</div>
                         </div>
                     </div>
 
@@ -144,7 +144,7 @@
                                 </a>
                             </div>
                             
-                            <div th:utext="${answer.body}" class="mb-2">Answer body...</div>
+                            <div th:text="${answer.body}" class="mb-2">Answer body...</div>
                             
                             <!-- Answer Images -->
                             <div class="mb-2" th:if="${answer.images != null && !answer.images.isEmpty()}">

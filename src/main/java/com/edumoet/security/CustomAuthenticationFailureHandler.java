@@ -3,6 +3,7 @@ package com.edumoet.security;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -11,45 +12,52 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Component
 public class CustomAuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
+    @Autowired
+    private LoginAttemptService loginAttemptService;
+
     @Override
-    public void onAuthenticationFailure(HttpServletRequest request, 
-                                       HttpServletResponse response,
-                                       AuthenticationException exception) throws IOException, ServletException {
-        
+    public void onAuthenticationFailure(HttpServletRequest request,
+                                        HttpServletResponse response,
+                                        AuthenticationException exception) throws IOException, ServletException {
+
         String errorMessage = "Đăng nhập thất bại!";
-        
+
         if (exception instanceof LockedException) {
-            // Tài khoản bị khóa
-            errorMessage = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để biết thêm chi tiết.";
-            setDefaultFailureUrl("/login?error=locked");
+            errorMessage = "Tài khoản của bạn đã bị khóa. Vui lòng thử lại sau hoặc liên hệ quản trị viên.";
+            setDefaultFailureUrl("/login?locked");
+
         } else if (exception instanceof DisabledException) {
-            // Tài khoản bị vô hiệu hóa
             errorMessage = "Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.";
-            setDefaultFailureUrl("/login?error=disabled");
+            setDefaultFailureUrl("/login?disabled");
+
         } else if (exception instanceof BadCredentialsException) {
-            // Sai tên đăng nhập hoặc mật khẩu
-            errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng!";
-            setDefaultFailureUrl("/login?error=invalid");
+            String username = request.getParameter("username");
+            boolean lockedNow = false;
+
+            if (username != null && !username.trim().isEmpty()) {
+                lockedNow = loginAttemptService.processFailedLogin(username.trim());
+            }
+
+            if (lockedNow) {
+                errorMessage = "Tài khoản tạm thời bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.";
+                setDefaultFailureUrl("/login?locked");
+            } else {
+                errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng!";
+                setDefaultFailureUrl("/login?invalid");
+            }
+
         } else {
-            // Lỗi khác
             errorMessage = "Đăng nhập thất bại: " + exception.getMessage();
-            setDefaultFailureUrl("/login?error=true");
+            setDefaultFailureUrl("/login?error");
         }
-        
-        // Encode message for URL
-        String encodedMessage = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
-        
-        // Add error message to session
+
         request.getSession().setAttribute("SPRING_SECURITY_LAST_EXCEPTION", exception);
         request.getSession().setAttribute("LOGIN_ERROR_MESSAGE", errorMessage);
-        
+
         super.onAuthenticationFailure(request, response, exception);
     }
 }
-

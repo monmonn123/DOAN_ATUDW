@@ -71,11 +71,12 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("classpath:/static/images/");
         
-        // ✅ Handle uploaded files từ local storage (F:\anh\doan\atudw\)
-        // URL: http://localhost:8080/uploads/users/user_1_uuid.jpg
+        // Handle uploaded files (images, avatars, logos, attachments)
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:///F:/anh/doan/atudw/")
-                .setCachePeriod(3600); // Cache 1 hour
+                .addResourceLocations("file:uploads/");
+        
+        registry.addResourceHandler("/attachments/**")
+                .addResourceLocations("file:uploads/attachments/");
     }
 
     @Override

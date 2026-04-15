@@ -20,7 +20,11 @@ import com.edumoet.entity.User;
 import com.edumoet.service.common.AnswerService;
 import com.edumoet.service.common.QuestionService;
 import com.edumoet.service.common.UserService;
-import com.edumoet.service.common.LocalFileStorageService;
+
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -30,7 +34,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Profile Controller - Quản lý hồ sơ cá nhân (dùng Local File Storage cho avatar)
+ * Profile Controller - Quản lý hồ sơ cá nhân (dùng AWS S3 cho avatar)
  */
 @Controller
 @RequestMapping("/profile")
@@ -48,11 +52,18 @@ public class ProfileController {
     @Autowired
     private AnswerService answerService;
 
+    // 🟢 AWS S3 dependencies
     @Autowired
-    private LocalFileStorageService localFileStorageService;
+    private S3Client s3Client;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucketName;
+
+    @Value("${cloud.aws.s3.base-folder:uploads}")
+    private String baseFolder;
 
     /**
-     * Helper: Resolve avatar URL from local storage or fallback to default
+     * Helper: Resolve avatar URL from S3 or fallback to default
      */
     private String resolveAvatarUrl(String profileImage, String username, int size) {
         if (profileImage != null && !profileImage.isBlank() && !profileImage.isEmpty()) {
@@ -60,8 +71,9 @@ public class ProfileController {
             if (profileImage.startsWith("http://") || profileImage.startsWith("https://")) {
                 return profileImage;
             }
-            // Return local file URL: /uploads/users/filename
-            return "/uploads/users/" + profileImage;
+            // Construct S3 URL - use consistent path: ltWeb/avatars/
+            // This matches the upload path used in ProfileController and MessageController
+            return "https://tungbacket.s3.ap-southeast-1.amazonaws.com/ltWeb/avatars/" + profileImage;
         }
         // Fallback to UI Avatars
         String safeUsername = (username != null && !username.trim().isEmpty()) 
@@ -80,6 +92,8 @@ public class ProfileController {
         
         // Add resolved avatar URL to model
         model.addAttribute("avatarUrl", resolveAvatarUrl(user.getProfileImage(), user.getUsername(), 128));
+        // Add base folder for fallback in template
+        model.addAttribute("s3BaseFolder", baseFolder);
 
         Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt").descending());
         Page<Question> questions = questionService.getQuestionsByAuthor(user, pageable);
@@ -112,12 +126,14 @@ public class ProfileController {
         model.addAttribute("user", user);
         // Add resolved avatar URL to model
         model.addAttribute("avatarUrl", resolveAvatarUrl(user.getProfileImage(), user.getUsername(), 150));
+        // Add base folder for fallback in template
+        model.addAttribute("s3BaseFolder", baseFolder);
         model.addAttribute("pageTitle", "Edit Profile");
         return "profile/edit";
     }
 
     /**
-     * Cập nhật profile (Upload avatar lên Local Storage)
+     * Cập nhật profile (Upload avatar lên S3)
      */
     @PostMapping("/update")
     public String updateProfile(
@@ -142,32 +158,92 @@ public class ProfileController {
             user.setGithubUrl(githubUrl);
             user.setLinkedinUrl(linkedinUrl);
 
-            // ================== Upload Avatar lên Local Storage ==================
+            // ================== Upload Avatar lên S3 ==================
+            System.out.println("📤 [PROFILE UPDATE] Checking for avatar upload...");
+            System.out.println("   profilePicture: " + (profilePicture != null ? "NOT NULL" : "NULL"));
+            if (profilePicture != null) {
+                System.out.println("   profilePicture.isEmpty(): " + profilePicture.isEmpty());
+                System.out.println("   profilePicture.getSize(): " + profilePicture.getSize());
+                System.out.println("   profilePicture.getOriginalFilename(): " + profilePicture.getOriginalFilename());
+                System.out.println("   profilePicture.getContentType(): " + profilePicture.getContentType());
+            }
+            
             if (profilePicture != null && !profilePicture.isEmpty()) {
+                System.out.println("✅ [AVATAR UPLOAD] Starting upload process...");
+                
                 String contentType = profilePicture.getContentType();
                 if (contentType == null || !contentType.startsWith("image/")) {
+                    System.out.println("❌ [AVATAR UPLOAD] Invalid content type: " + contentType);
                     throw new IllegalArgumentException("File must be an image");
                 }
                 if (profilePicture.getSize() > 5 * 1024 * 1024) {
+                    System.out.println("❌ [AVATAR UPLOAD] File too large: " + profilePicture.getSize());
                     throw new IllegalArgumentException("File size must be less than 5MB");
                 }
 
-                // Xoá ảnh cũ nếu có
+                // Tạo tên file duy nhất
+                String originalFilename = profilePicture.getOriginalFilename();
+                String extension = (originalFilename != null && originalFilename.contains("."))
+                        ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                        : ".jpg";
+
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                String uuid = UUID.randomUUID().toString().substring(0, 8);
+                String filename = String.format("user%d_%s_%s%s", user.getId(), timestamp, uuid, extension);
+                // Use consistent path: ltWeb/avatars/ to match all other controllers
+                String key = "ltWeb/avatars/" + filename;
+
+                System.out.println("📝 [AVATAR UPLOAD] File details:");
+                System.out.println("   Original filename: " + originalFilename);
+                System.out.println("   Generated filename: " + filename);
+                System.out.println("   S3 key: " + key);
+                System.out.println("   Content type: " + contentType);
+                System.out.println("   File size: " + profilePicture.getSize() + " bytes");
+
+                // Xoá ảnh cũ trên S3 nếu có
                 if (user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
                     try {
-                        localFileStorageService.deleteFile(user.getProfileImage(), "user");
+                        String oldKey = "ltWeb/avatars/" + user.getProfileImage();
+                        System.out.println("🗑️ [AVATAR UPLOAD] Deleting old avatar from S3: " + oldKey);
+                        s3Client.deleteObject(DeleteObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(oldKey)
+                                .build());
+                        System.out.println("✅ [AVATAR UPLOAD] Deleted old avatar from S3");
                     } catch (Exception e) {
-                        System.out.println("⚠️ Could not delete old avatar: " + e.getMessage());
+                        System.out.println("⚠️ [AVATAR UPLOAD] Could not delete old avatar: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
 
                 // Upload ảnh mới
                 try {
-                    String filename = localFileStorageService.uploadUserFile(profilePicture, user.getId());
+                    System.out.println("📤 [AVATAR UPLOAD] Uploading to S3...");
+                    System.out.println("   Bucket: " + bucketName);
+                    System.out.println("   Key: " + key);
+                    
+                    byte[] fileBytes = profilePicture.getBytes();
+                    System.out.println("   File bytes length: " + fileBytes.length);
+                    
+                    s3Client.putObject(
+                            PutObjectRequest.builder()
+                                    .bucket(bucketName)
+                                    .key(key)
+                                    .contentType(contentType)
+                                    .build(),
+                            RequestBody.fromBytes(fileBytes)
+                    );
+                    
+                    System.out.println("✅ [AVATAR UPLOAD] Successfully uploaded to S3!");
                     user.setProfileImage(filename);
+                    System.out.println("💾 [AVATAR UPLOAD] Updated user profileImage to: " + filename);
                 } catch (Exception e) {
-                    throw new RuntimeException("Failed to upload avatar: " + e.getMessage(), e);
+                    System.err.println("❌ [AVATAR UPLOAD] Error uploading to S3: " + e.getMessage());
+                    e.printStackTrace();
+                    throw new RuntimeException("Failed to upload avatar to S3: " + e.getMessage(), e);
                 }
+            } else {
+                System.out.println("ℹ️ [PROFILE UPDATE] No avatar file to upload");
             }
 
             userService.updateUser(user);
@@ -184,7 +260,7 @@ public class ProfileController {
     }
 
     /**
-     * Xóa ảnh đại diện (trên Local Storage)
+     * Xóa ảnh đại diện (trên S3)
      */
     @PostMapping("/remove-avatar")
     public String removeAvatar(
@@ -196,8 +272,15 @@ public class ProfileController {
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (user.getProfileImage() != null && !user.getProfileImage().isEmpty()) {
+                // Use consistent path: ltWeb/avatars/ to match all other controllers
+                String key = "ltWeb/avatars/" + user.getProfileImage();
+
                 try {
-                    localFileStorageService.deleteFile(user.getProfileImage(), "user");
+                    s3Client.deleteObject(DeleteObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(key)
+                            .build());
+                    System.out.println("🗑️ Deleted avatar from S3: " + key);
                 } catch (Exception e) {
                     System.out.println("⚠️ Failed to delete avatar: " + e.getMessage());
                 }

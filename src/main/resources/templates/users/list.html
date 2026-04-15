@@ -39,13 +39,7 @@
             <div class="card h-100">
                 <div class="card-body">
                     <div class="text-center mb-3">
-                        <img th:if="${user.profileImage}" 
-                             th:src="@{/uploads/users/{filename}(filename=${user.profileImage})}" 
-                             alt="Avatar" 
-                             class="rounded-circle" 
-                             style="width: 120px; height: 120px; object-fit: cover;">
-                        <i th:if="!${user.profileImage}" 
-                           class="bi bi-person-circle display-1"></i>
+                        <i class="bi bi-person-circle display-1"></i>
                     </div>
                     <h5 class="card-title text-center">
                         <a th:href="@{/users/{id}(id=${user.id})}" 

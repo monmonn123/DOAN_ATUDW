@@ -83,7 +83,7 @@
                             <tr th:each="answer : ${answers}">
                                 <td th:text="${answer.id}">1</td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 500px;" th:utext="${#strings.abbreviate(answer.body, 100)}" th:title="${answer.body}">
+                                    <div class="text-truncate" style="max-width: 500px;" th:text="${#strings.abbreviate(answer.body, 100)}" th:title="${answer.body}">
                                         Answer text...
                                     </div>
                                     <span th:if="${answer.isAccepted}" class="badge bg-success mt-1">

@@ -13,13 +13,7 @@
         <div class="col-md-3">
             <div class="card mb-4">
                 <div class="card-body text-center">
-                    <img th:if="${user.profileImage}" 
-                         th:src="@{/uploads/users/{filename}(filename=${user.profileImage})}" 
-                         alt="Avatar" 
-                         class="rounded-circle" 
-                         style="width: 150px; height: 150px; object-fit: cover;">
-                    <i th:if="!${user.profileImage}" 
-                       class="bi bi-person-circle display-1"></i>
+                    <i class="bi bi-person-circle display-1"></i>
                     <h3 class="mt-3" th:text="${user.username}">Username</h3>
                     <div class="mb-3">
                         <span class="badge bg-warning text-dark">

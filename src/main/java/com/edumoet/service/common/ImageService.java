@@ -50,9 +50,6 @@ public class ImageService {
     private AnswerRepository answerRepository;
     @Autowired
     private S3Client s3Client;
-    
-    @Autowired
-    private LocalFileStorageService localFileStorageService;  // ← ADD: Local storage fallback
 
     // ================== SAVE IMAGE ==================
     public ImageAttachment saveImage(MultipartFile file, Long questionId, Long answerId, User uploadedBy) throws IOException {
@@ -108,64 +105,81 @@ public class ImageService {
     // ================== QUESTION IMAGE ==================
     public ImageAttachment saveQuestionImage(MultipartFile file, Question question) throws IOException {
         validateImage(file);
-        
-        System.out.println("📤 [SAVE QUESTION IMAGE] Using LocalFileStorageService");
-        
-        try {
-            // ← USE LOCAL STORAGE (instead of S3)
-            String filename = localFileStorageService.uploadQuestionFile(file, question.getId());
-            
-            ImageAttachment image = new ImageAttachment();
-            image.setFileName(file.getOriginalFilename());
-            image.setPath(filename);
-            image.setContentType(file.getContentType());
-            image.setQuestion(question);
-            image.setUploadedBy(question.getAuthor());
-            image.setCreatedAt(LocalDateTime.now());
-            return imageAttachmentRepository.save(image);
-        } catch (Exception e) {
-            throw new IOException("Failed to upload question image: " + e.getMessage(), e);
-        }
+        String originalFilename = file.getOriginalFilename();
+        String extension = (originalFilename != null && originalFilename.contains(".")) ?
+                originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String uuid = UUID.randomUUID().toString().substring(0, 8);
+        String filename = String.format("q%d_%s_%s%s", question.getId(), timestamp, uuid, extension);
+        String key = baseFolder + "/" + filename;
+
+        System.out.println("📤 [SAVE QUESTION IMAGE] key=" + key);
+
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(file.getContentType())
+                        .build(),
+                RequestBody.fromBytes(file.getBytes())
+        );
+
+        ImageAttachment image = new ImageAttachment();
+        image.setFileName(originalFilename);
+        image.setPath(filename);
+        image.setContentType(file.getContentType());
+        image.setQuestion(question);
+        image.setUploadedBy(question.getAuthor());
+        image.setCreatedAt(LocalDateTime.now());
+        return imageAttachmentRepository.save(image);
     }
 
     // ================== ANSWER IMAGE ==================
     public ImageAttachment saveAnswerImage(MultipartFile file, Answer answer) throws IOException {
         validateImage(file);
-        
-        System.out.println("📤 [SAVE ANSWER IMAGE] Using LocalFileStorageService");
-        
-        try {
-            // ← USE LOCAL STORAGE (instead of S3)
-            String filename = localFileStorageService.uploadAnswerFile(file, answer.getId());
-            
-            ImageAttachment image = new ImageAttachment();
-            image.setFileName(file.getOriginalFilename());
-            image.setPath(filename);
-            image.setContentType(file.getContentType());
-            image.setAnswer(answer);
-            image.setUploadedBy(answer.getAuthor());
-            image.setCreatedAt(LocalDateTime.now());
-            return imageAttachmentRepository.save(image);
-        } catch (Exception e) {
-            throw new IOException("Failed to upload answer image: " + e.getMessage(), e);
-        }
+        String originalFilename = file.getOriginalFilename();
+        String extension = (originalFilename != null && originalFilename.contains(".")) ?
+                originalFilename.substring(originalFilename.lastIndexOf(".")) : ".jpg";
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String uuid = UUID.randomUUID().toString().substring(0, 8);
+        String filename = String.format("a%d_%s_%s%s", answer.getId(), timestamp, uuid, extension);
+        String key = baseFolder + "/" + filename;
+
+        System.out.println("📤 [SAVE ANSWER IMAGE] key=" + key);
+
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(file.getContentType())
+                        .build(),
+                RequestBody.fromBytes(file.getBytes())
+        );
+
+        ImageAttachment image = new ImageAttachment();
+        image.setFileName(originalFilename);
+        image.setPath(filename);
+        image.setContentType(file.getContentType());
+        image.setAnswer(answer);
+        image.setUploadedBy(answer.getAuthor());
+        image.setCreatedAt(LocalDateTime.now());
+        return imageAttachmentRepository.save(image);
     }
 
     // ================== DELETE IMAGE ==================
     public void deleteImage(ImageAttachment attachment) throws IOException {
-        System.out.println("🗑️ [DELETE IMAGE] " + attachment.getPath());
-        
+        String key = baseFolder + "/" + attachment.getPath();
+        System.out.println("🗑️ [DELETE IMAGE] key=" + key);
         try {
-            // ← DELETE FROM LOCAL STORAGE (not S3)
-            String imageType = attachment.getQuestion() != null ? "question" : 
-                              attachment.getAnswer() != null ? "answer" : "image";
-            localFileStorageService.deleteFile(attachment.getPath(), imageType);
-        } catch (Exception e) {
-            System.out.println("⚠️ Failed to delete image from local storage: " + e.getMessage());
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build());
+        } catch (S3Exception e) {
+            System.out.println("⚠️ Failed to delete image from S3: " + e.awsErrorDetails().errorMessage());
         }
-        
         imageAttachmentRepository.delete(attachment);
-        System.out.println("✅ Image record deleted from DB and local storage");
+        System.out.println("✅ Image record deleted from DB and S3");
     }
 
     // ================== GET IMAGE DATA (via public S3 URL) ==================
